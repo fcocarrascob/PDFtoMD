@@ -59,6 +59,7 @@ class AIAgent:
                - STRICTLY use $ for inline math (e.g., $E=mc^2$).
                - STRICTLY use $$ for block math (e.g., $$ E=mc^2 $$).
                - Do NOT use \\( ... \\) or \\[ ... \\].
+               - Pay close attention to SUBSCRIPTS and SUPERSCRIPTS. Ensure no terms are omitted.
                - VARIABLE DEFINITIONS: If an equation is presented with undefined variables in the immediate context, explicitly list the variable definitions below the equation as a bulleted list (e.g., "- $E$: Energy").
             5. IMAGES AND FIGURES:
                - Do NOT try to insert images using markdown syntax (like ![...](...)). 
