@@ -6,6 +6,9 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 import sympy as sp
+from pint import Quantity
+
+from notebook.units import get_unit_registry
 
 
 @dataclass
@@ -28,12 +31,22 @@ class VariableRecord:
     units: Optional[str] = None
 
 
+def _format_value_with_units(numeric_value: Optional[float], units: Optional[str]) -> str:
+    """Return a consistent string for numeric values and their units."""
+
+    if numeric_value is None:
+        return ""
+    formatted_value = FormulaBlock._format_numeric_value(numeric_value)
+    return f"{formatted_value} {units}" if units else formatted_value
+
+
 @dataclass
 class EvaluationContext:
     """Context manager that keeps symbol and numeric value registries."""
 
     symbols: SymbolRegistry = field(default_factory=SymbolRegistry)
     numeric_values: dict[str, float] = field(default_factory=dict)
+    quantities: dict[str, Quantity] = field(default_factory=dict)
     variables: list[VariableRecord] = field(default_factory=list)
 
     def __enter__(self) -> "EvaluationContext":
@@ -43,13 +56,20 @@ class EvaluationContext:
         return False
 
     def register_variable(
-        self, name: str, expression: str, numeric_value: Optional[float], units: Optional[str]
+        self,
+        name: str,
+        expression: str,
+        numeric_value: Optional[float],
+        units: Optional[str],
+        quantity: Optional[Quantity],
     ) -> None:
         """Add a variable evaluation record and persist its numeric value."""
 
         _ = self.symbols[name]
         if numeric_value is not None:
             self.numeric_values[name] = numeric_value
+        if quantity is not None:
+            self.quantities[name] = quantity
         self.variables.append(
             VariableRecord(
                 name=name,
@@ -77,7 +97,7 @@ class EvaluationContext:
 
         rows = []
         for variable in self.variables:
-            value = "" if variable.numeric_value is None else str(variable.numeric_value)
+            value = _format_value_with_units(variable.numeric_value, variable.units)
             rows.append(
                 "<tr>"
                 f"<td>{html.escape(variable.name)}</td>"
@@ -127,8 +147,9 @@ class FormulaBlock(Block):
     is_assignment: bool = False
     variable_name: Optional[str] = None
     units: Optional[str] = None
+    quantity: Optional[Quantity] = None
 
-    def _parse_assignment(self, rhs: str, context: EvaluationContext) -> sp.Expr:
+    def _parse_assignment(self, rhs: str, context: EvaluationContext) -> tuple[sp.Expr, Optional[Quantity]]:
         """Parse the right-hand side of an assignment, capturing units when present."""
 
         rhs = rhs.strip()
@@ -139,13 +160,29 @@ class FormulaBlock(Block):
             try:
                 value = float(parts[0])
                 if len(parts) > 1:
-                    self.units = " ".join(parts[1:])
-                return sp.Float(value)
+                    unit_registry = get_unit_registry()
+                    units = " ".join(parts[1:])
+                    quantity = value * unit_registry(units)
+                    return sp.Float(value), quantity
+                return sp.Float(value), None
             except ValueError:
                 pass
 
         # Fall back to generic SymPy parsing
-        return sp.sympify(rhs, locals=context.symbols)
+        return sp.sympify(rhs, locals=context.symbols), None
+
+    @staticmethod
+    def _format_numeric_value(value: float) -> str:
+        """Format numeric values consistently for display."""
+
+        return f"{value:.2f}"
+
+    @staticmethod
+    def _format_quantity(quantity: Quantity) -> tuple[float, str]:
+        """Normalize a quantity for display and numeric storage."""
+
+        compact = quantity.to_compact()
+        return float(compact.magnitude), f"{compact.units:~P}"
 
     def evaluate(self, context: Optional[EvaluationContext] = None) -> None:
         """Parse and evaluate the expression using SymPy."""
@@ -153,6 +190,7 @@ class FormulaBlock(Block):
         context = context or EvaluationContext()
         self.is_assignment = False
         self.units = None
+        self.quantity = None
         self.variable_name = None
         self.numeric_value = None
 
@@ -165,21 +203,28 @@ class FormulaBlock(Block):
                 if lhs:
                     self.is_assignment = True
                     self.variable_name = lhs
-                    self.sympy_expr = self._parse_assignment(rhs, context)
-                    substitution = self.sympy_expr.subs(context.numeric_values)
-                    evaluated = sp.N(substitution)
-                    if evaluated.is_real:
-                        try:
-                            self.numeric_value = float(evaluated)
-                        except (TypeError, ValueError):
-                            self.numeric_value = None
-                    self.result = str(evaluated)
+                    self.sympy_expr, quantity = self._parse_assignment(rhs, context)
+                    if quantity is not None:
+                        self.quantity = quantity
+                        magnitude, normalized_units = self._format_quantity(quantity)
+                        self.numeric_value = magnitude
+                        self.units = normalized_units
+                        self.result = f"{self._format_numeric_value(magnitude)} {normalized_units}"
+                    else:
+                        substitution = self.sympy_expr.subs(context.numeric_values)
+                        evaluated = sp.N(substitution)
+                        if evaluated.is_real:
+                            try:
+                                self.numeric_value = float(evaluated)
+                            except (TypeError, ValueError):
+                                self.numeric_value = None
+                        self.result = str(evaluated)
                     expr_latex = sp.latex(self.sympy_expr) if self.sympy_expr is not None else html.escape(rhs)
                     display_latex = expr_latex
                     if self.units:
                         display_latex = f"{display_latex}\\;{html.escape(self.units)}"
                     self.latex = f"{html.escape(lhs)} = {display_latex}"
-                    context.register_variable(lhs, expr_latex, self.numeric_value, self.units)
+                    context.register_variable(lhs, expr_latex, self.numeric_value, self.units, self.quantity)
                     return
 
             # Regular expression (non-assignment)
