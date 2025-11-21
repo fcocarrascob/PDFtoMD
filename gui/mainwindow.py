@@ -189,9 +189,26 @@ class MainWindow(QMainWindow):
         pdf_files = [f for f in files if f.lower().endswith('.pdf')]
         
         if pdf_files:
-            self.start_conversion(pdf_files[0])
+            self.process_queue(pdf_files)
         else:
-            self.status_label.setText("Please drop a PDF file")
+            self.status_label.setText("Please drop PDF files")
+
+    def process_queue(self, files):
+        self.file_queue = files
+        self.total_files = len(files)
+        self.current_file_index = 0
+        self.start_next_conversion()
+
+    def start_next_conversion(self):
+        if self.current_file_index < self.total_files:
+            file_path = self.file_queue[self.current_file_index]
+            self.start_conversion(file_path)
+        else:
+            self.status_label.setText("All files processed successfully!")
+            self.label.setText("Drag & Drop PDF here")
+            self.progress.hide()
+            self.setAcceptDrops(True)
+            QMessageBox.information(self, "Batch Complete", f"Processed {self.total_files} files.")
 
     def start_conversion(self, file_path):
         use_ai = self.ai_checkbox.isChecked()
@@ -200,17 +217,29 @@ class MainWindow(QMainWindow):
             return
 
         mode_text = "AI Agent" if use_ai else "Standard"
-        self.label.setText(f"Converting ({mode_text}): {os.path.basename(file_path)}...")
+        file_name = os.path.basename(file_path)
+        self.label.setText(f"Converting ({self.current_file_index + 1}/{self.total_files}): {file_name}...")
         self.progress.setValue(0)
-        self.progress.hide()
-        self.label.setText("Drag & Drop PDF here")
-        self.status_label.setText(message)
-        self.setAcceptDrops(True)
-        QMessageBox.information(self, "Success", message)
+        self.progress.show()
+        self.status_label.setText(f"Processing {file_name}...")
+        self.setAcceptDrops(False) # Disable drops during conversion
+        
+        api_key_to_use = self.api_key if use_ai else None
+        self.worker = ConversionWorker(file_path, api_key=api_key_to_use, model_name=self.ai_model)
+        self.worker.finished.connect(self.on_conversion_finished)
+        self.worker.error.connect(self.on_conversion_error)
+        self.worker.progress.connect(self.progress.setValue)
+        self.worker.start()
+
+    def on_conversion_finished(self, message):
+        self.current_file_index += 1
+        if self.current_file_index < self.total_files:
+            self.start_next_conversion()
+        else:
+            self.start_next_conversion() # Will trigger completion logic
 
     def on_conversion_error(self, error_msg):
-        self.progress.hide()
-        self.label.setText("Drag & Drop PDF here")
-        self.status_label.setText("Error occurred")
-        self.setAcceptDrops(True)
-        QMessageBox.critical(self, "Error", f"Failed to convert:\n{error_msg}")
+        QMessageBox.critical(self, "Error", f"Failed to convert file:\n{error_msg}")
+        # Continue with next file even if one fails
+        self.current_file_index += 1
+        self.start_next_conversion()

@@ -26,7 +26,7 @@ class PDFConverter:
                     pix = page.get_pixmap()
                     img_bytes = pix.tobytes("png")
                     
-                    page_md = ai_agent.convert_page(img_bytes)
+                    page_md = ai_agent.convert_page(img_bytes, page_num=i)
                     md_text += f"## Page {i+1}\n\n{page_md}\n\n"
                 else:
                     # Local Mode
