@@ -3,19 +3,22 @@ from __future__ import annotations
 
 import html
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
 import sympy as sp
 from pint import Quantity
 
-from notebook.units import get_unit_registry
+from notebook.units import get_unit_registry, math_env
+
+if TYPE_CHECKING:  # Avoid runtime import cycles with the renderer
+    from notebook.renderer import NotebookRenderer
 
 
 @dataclass
 class SymbolRegistry(dict):
     """Dictionary that lazily creates SymPy symbols on demand."""
 
-    def __missing__(self, key: str) -> sp.Symbol:  # pragma: no cover - simple helper
+    def __missing__(self, key: str) -> sp.Symbol:
         symbol = sp.Symbol(key)
         self[key] = symbol
         return symbol
@@ -29,15 +32,6 @@ class VariableRecord:
     expression: str
     numeric_value: Optional[float] = None
     units: Optional[str] = None
-
-
-def _format_value_with_units(numeric_value: Optional[float], units: Optional[str]) -> str:
-    """Return a consistent string for numeric values and their units."""
-
-    if numeric_value is None:
-        return ""
-    formatted_value = FormulaBlock._format_numeric_value(numeric_value)
-    return f"{formatted_value} {units}" if units else formatted_value
 
 
 @dataclass
@@ -78,42 +72,6 @@ class EvaluationContext:
                 units=units,
             )
         )
-
-    def variable_table_html(self) -> str:
-        """Render the registry as an HTML table for the preview."""
-
-        if not self.variables:
-            return ""
-
-        header = """
-        <div class='variable-table'>
-            <h3>Variables</h3>
-            <table>
-                <thead>
-                    <tr><th>Nombre</th><th>Expresión</th><th>Valor</th><th>Unidades</th></tr>
-                </thead>
-                <tbody>
-        """
-
-        rows = []
-        for variable in self.variables:
-            value = _format_value_with_units(variable.numeric_value, variable.units)
-            rows.append(
-                "<tr>"
-                f"<td>{html.escape(variable.name)}</td>"
-                f"<td>$$ {variable.expression} $$</td>"
-                f"<td>{html.escape(value)}</td>"
-                f"<td>{html.escape(variable.units or '')}</td>"
-                "</tr>"
-            )
-
-        footer = """
-                </tbody>
-            </table>
-        </div>
-        """
-
-        return header + "\n".join(rows) + footer
 
 
 @dataclass
@@ -171,6 +129,32 @@ class FormulaBlock(Block):
         # Fall back to generic SymPy parsing
         return sp.sympify(rhs, locals=context.symbols), None
 
+    def _evaluate_with_pint(self, expression: str, context: EvaluationContext):
+        """Try to evaluate the expression using pint quantities when available."""
+
+        ureg = get_unit_registry()
+        env = {"ureg": ureg}
+        env.update(math_env())
+        env.update(context.quantities)
+        # Fallback to numeric-only substitutions for symbols without units.
+        for name, value in context.numeric_values.items():
+            env.setdefault(name, value)
+
+        # Normalize caret to python exponent for eval friendliness.
+        expr = expression.replace("^", "**")
+        try:
+            return eval(expr, {"__builtins__": {}}, env)  # pylint: disable=eval-used
+        except Exception:
+            return None
+
+    @staticmethod
+    def _to_quantity(value) -> Optional[Quantity]:
+        """Return value if it is a pint Quantity, else None."""
+
+        if isinstance(value, Quantity):
+            return value
+        return None
+
     @staticmethod
     def _format_numeric_value(value: float) -> str:
         """Format numeric values consistently for display."""
@@ -181,8 +165,22 @@ class FormulaBlock(Block):
     def _format_quantity(quantity: Quantity) -> tuple[float, str]:
         """Normalize a quantity for display and numeric storage."""
 
-        compact = quantity.to_compact()
-        return float(compact.magnitude), f"{compact.units:~P}"
+        ureg = get_unit_registry()
+        try:
+            # Custom simplifications for common mechanical combos.
+            if quantity.check("[pressure] * [length]"):
+                quantity = quantity.to(ureg.newton / ureg.meter)
+            elif quantity.check("[pressure]"):
+                quantity = quantity.to(ureg.pascal)
+        except Exception:
+            pass
+
+        try:
+            compact = quantity.to_compact()
+        except Exception:
+            compact = quantity
+        units_text = f"{compact.units:~P}".replace("\u00b7", "*").replace(" ", "")
+        return float(compact.magnitude), units_text
 
     def evaluate(self, context: Optional[EvaluationContext] = None) -> None:
         """Parse and evaluate the expression using SymPy."""
@@ -204,6 +202,7 @@ class FormulaBlock(Block):
                     self.is_assignment = True
                     self.variable_name = lhs
                     self.sympy_expr, quantity = self._parse_assignment(rhs, context)
+                    # First try with explicit quantity from parsing.
                     if quantity is not None:
                         self.quantity = quantity
                         magnitude, normalized_units = self._format_quantity(quantity)
@@ -211,14 +210,24 @@ class FormulaBlock(Block):
                         self.units = normalized_units
                         self.result = f"{self._format_numeric_value(magnitude)} {normalized_units}"
                     else:
-                        substitution = self.sympy_expr.subs(context.numeric_values)
-                        evaluated = sp.N(substitution)
-                        if evaluated.is_real:
-                            try:
-                                self.numeric_value = float(evaluated)
-                            except (TypeError, ValueError):
-                                self.numeric_value = None
-                        self.result = str(evaluated)
+                        # Try pint-eval using previously defined quantities.
+                        pint_value = self._evaluate_with_pint(rhs, context)
+                        quantity_value = self._to_quantity(pint_value)
+                        if quantity_value is not None:
+                            self.quantity = quantity_value
+                            magnitude, normalized_units = self._format_quantity(quantity_value)
+                            self.numeric_value = magnitude
+                            self.units = normalized_units
+                            self.result = f"{self._format_numeric_value(magnitude)} {normalized_units}"
+                        else:
+                            substitution = self.sympy_expr.subs(context.numeric_values)
+                            evaluated = sp.N(substitution)
+                            if evaluated.is_real:
+                                try:
+                                    self.numeric_value = float(evaluated)
+                                except (TypeError, ValueError):
+                                    self.numeric_value = None
+                            self.result = str(evaluated)
                     expr_latex = sp.latex(self.sympy_expr) if self.sympy_expr is not None else html.escape(rhs)
                     display_latex = expr_latex
                     if self.units:
@@ -229,9 +238,23 @@ class FormulaBlock(Block):
 
             # Regular expression (non-assignment)
             self.sympy_expr = sp.sympify(raw, locals=context.symbols)
-            substitution = self.sympy_expr.subs(context.numeric_values)
-            evaluated = sp.N(substitution)
-            self.result = str(evaluated)
+            pint_value = self._evaluate_with_pint(raw, context)
+            quantity_value = self._to_quantity(pint_value)
+            if quantity_value is not None:
+                self.quantity = quantity_value
+                magnitude, normalized_units = self._format_quantity(quantity_value)
+                self.numeric_value = magnitude
+                self.units = normalized_units
+                self.result = f"{self._format_numeric_value(magnitude)} {normalized_units}"
+            else:
+                substitution = self.sympy_expr.subs(context.numeric_values)
+                evaluated = sp.N(substitution)
+                self.result = str(evaluated)
+                if evaluated.is_real:
+                    try:
+                        self.numeric_value = float(evaluated)
+                    except (TypeError, ValueError):
+                        self.numeric_value = None
             self.latex = sp.latex(self.sympy_expr)
         except Exception as exc:  # pylint: disable=broad-except
             # Keep evaluation errors but continue showing them in the UI.
@@ -272,32 +295,16 @@ class Document:
         """Append a new block to the document."""
         self.blocks.append(block)
 
-    def to_html(self) -> str:
-        """Create an HTML preview containing all blocks with MathJax."""
-        context = self.evaluate()
-        body = "\n".join(block.to_html() for block in self.blocks) or "<p>No blocks yet.</p>"
-        body += context.variable_table_html()
-        return f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset='utf-8'>
-            <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-            <style>
-                body {{ font-family: Arial, sans-serif; padding: 16px; background: #1f1f1f; color: #f0f0f0; }}
-                .text-block {{ margin-bottom: 12px; }}
-                .formula-block {{ margin-bottom: 16px; padding: 12px; background: #2a2a2a; border-radius: 6px; }}
-                .formula-input {{ font-size: 18px; margin-bottom: 6px; }}
-                .formula-result {{ color: #8bd450; font-weight: bold; }}
-                .variable-table {{ margin-top: 24px; background: #2a2a2a; padding: 12px; border-radius: 6px; }}
-                .variable-table h3 {{ margin-top: 0; }}
-                .variable-table table {{ width: 100%; border-collapse: collapse; }}
-                .variable-table th, .variable-table td {{ padding: 6px 8px; text-align: left; border-bottom: 1px solid #3a3a3a; }}
-                .variable-table th {{ color: #d0d0d0; }}
-            </style>
-        </head>
-        <body>
-            {body}
-        </body>
-        </html>
-        """
+    def to_html(self, renderer: Optional["NotebookRenderer"] = None) -> str:
+        """Create an HTML preview using the provided renderer."""
+
+        renderer = renderer or self._default_renderer()
+        return renderer.render(self)
+
+    @staticmethod
+    def _default_renderer() -> "NotebookRenderer":
+        """Lazy import to avoid circular dependency when rendering."""
+
+        from notebook.renderer import NotebookRenderer
+
+        return NotebookRenderer()
