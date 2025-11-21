@@ -1,0 +1,5 @@
+pyside6
+pymupdf4llm
+pymupdf
+openai
+python-dotenv
