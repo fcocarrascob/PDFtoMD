@@ -1,5 +1,7 @@
 pyside6
+pyside6-addons
 pymupdf4llm
 pymupdf
 openai
 python-dotenv
+sympy
