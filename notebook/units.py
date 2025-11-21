@@ -1,0 +1,57 @@
+"""Shared unit registry utilities."""
+
+from __future__ import annotations
+
+import math
+from functools import lru_cache
+
+from pint import UnitRegistry
+
+# Common units to surface in the UI quick-pick.
+COMMON_UNITS: list[str] = [
+    "mm",
+    "cm",
+    "m",
+    "km",
+    "in",
+    "ft",
+    "N",
+    "kN",
+    "MN",
+    "Pa",
+    "kPa",
+    "MPa",
+    "GPa",
+    "kg",
+    "g",
+    "ton",
+    "s",
+    "min",
+    "hr",
+    "deg",
+    "rad",
+]
+
+
+def math_env() -> dict[str, object]:
+    """Safe math helpers exposed to expression evaluation."""
+
+    return {
+        "sqrt": math.sqrt,
+        "sin": math.sin,
+        "cos": math.cos,
+        "tan": math.tan,
+        "log": math.log,
+        "exp": math.exp,
+        "pi": math.pi,
+    }
+
+
+@lru_cache(maxsize=1)
+def get_unit_registry() -> UnitRegistry:
+    """Return a singleton :class:`pint.UnitRegistry` instance."""
+
+    registry = UnitRegistry()
+    registry.default_format = "~P"
+    return registry
+

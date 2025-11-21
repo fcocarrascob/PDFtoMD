@@ -4,17 +4,21 @@ from __future__ import annotations
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QHBoxLayout,
+    QComboBox,
     QListWidget,
     QListWidgetItem,
     QPushButton,
     QSplitter,
     QTextEdit,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
 
 from notebook.document import Document, FormulaBlock, TextBlock
+from notebook.renderer import NotebookRenderer
+from notebook.units import COMMON_UNITS
 
 
 class NotebookTab(QWidget):
@@ -23,6 +27,7 @@ class NotebookTab(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.document = Document()
+        self.renderer = NotebookRenderer()
 
         # UI elements
         self.block_list = QListWidget()
@@ -59,6 +64,7 @@ class NotebookTab(QWidget):
         right_layout = QVBoxLayout(right_panel)
         right_layout.setContentsMargins(4, 4, 4, 4)
 
+        right_layout.addWidget(self._build_toolbar())
         self.editor.setPlaceholderText("Enter text or a SymPy-friendly expression...")
         right_layout.addWidget(self.editor, 1)
         right_layout.addWidget(self.preview, 2)
@@ -142,5 +148,53 @@ class NotebookTab(QWidget):
 
     def update_preview(self) -> None:
         """Render the document into the web view with MathJax."""
-        html_content = self.document.to_html()
+        html_content = self.document.to_html(renderer=self.renderer)
         self.preview.setHtml(html_content)
+
+    # Toolbar helpers
+    def _build_toolbar(self) -> QWidget:
+        """Create a small toolbar with math operators and unit picker."""
+
+        container = QWidget()
+        layout = QHBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 4)
+
+        ops = [
+            ("+", " + "),
+            ("-", " - "),
+            ("\u00d7", " * "),
+            ("\u00f7", " / "),
+            ("^", " ** "),
+            ("\u221a", "sqrt()"),
+        ]
+        for label, snippet in ops:
+            btn = QToolButton()
+            btn.setText(label)
+            btn.setToolTip(f"Insert {label}")
+            btn.clicked.connect(lambda _=False, s=snippet: self.insert_snippet(s))
+            layout.addWidget(btn)
+
+        self.unit_combo = QComboBox()
+        self.unit_combo.addItems(COMMON_UNITS)
+        unit_btn = QToolButton()
+        unit_btn.setText("Unit")
+        unit_btn.setToolTip("Insert selected unit")
+        unit_btn.clicked.connect(self.insert_selected_unit)
+
+        layout.addWidget(self.unit_combo)
+        layout.addWidget(unit_btn)
+        layout.addStretch()
+        return container
+
+    def insert_snippet(self, text: str) -> None:
+        """Insert a math snippet at the current cursor position."""
+
+        cursor = self.editor.textCursor()
+        cursor.insertText(text)
+        self.editor.setTextCursor(cursor)
+
+    def insert_selected_unit(self) -> None:
+        """Insert the unit chosen from the combo."""
+
+        unit = self.unit_combo.currentText()
+        self.insert_snippet(f" {unit}")
