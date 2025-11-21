@@ -105,6 +105,94 @@ class EvaluationContext:
 
 
 @dataclass
+class SymbolRegistry(dict):
+    """Dictionary that lazily creates SymPy symbols on demand."""
+
+    def __missing__(self, key: str) -> sp.Symbol:  # pragma: no cover - simple helper
+        symbol = sp.Symbol(key)
+        self[key] = symbol
+        return symbol
+
+
+@dataclass
+class VariableRecord:
+    """Stores the evaluation details for a single variable."""
+
+    name: str
+    expression: str
+    numeric_value: Optional[float] = None
+    units: Optional[str] = None
+
+
+@dataclass
+class EvaluationContext:
+    """Context manager that keeps symbol and numeric value registries."""
+
+    symbols: SymbolRegistry = field(default_factory=SymbolRegistry)
+    numeric_values: dict[str, float] = field(default_factory=dict)
+    variables: list[VariableRecord] = field(default_factory=list)
+
+    def __enter__(self) -> "EvaluationContext":
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+        return False
+
+    def register_variable(
+        self, name: str, expression: str, numeric_value: Optional[float], units: Optional[str]
+    ) -> None:
+        """Add a variable evaluation record and persist its numeric value."""
+
+        _ = self.symbols[name]
+        if numeric_value is not None:
+            self.numeric_values[name] = numeric_value
+        self.variables.append(
+            VariableRecord(
+                name=name,
+                expression=expression,
+                numeric_value=numeric_value,
+                units=units,
+            )
+        )
+
+    def variable_table_html(self) -> str:
+        """Render the registry as an HTML table for the preview."""
+
+        if not self.variables:
+            return ""
+
+        header = """
+        <div class='variable-table'>
+            <h3>Variables</h3>
+            <table>
+                <thead>
+                    <tr><th>Nombre</th><th>Expresión</th><th>Valor</th><th>Unidades</th></tr>
+                </thead>
+                <tbody>
+        """
+
+        rows = []
+        for variable in self.variables:
+            value = "" if variable.numeric_value is None else str(variable.numeric_value)
+            rows.append(
+                "<tr>"
+                f"<td>{html.escape(variable.name)}</td>"
+                f"<td>$$ {variable.expression} $$</td>"
+                f"<td>{html.escape(value)}</td>"
+                f"<td>{html.escape(variable.units or '')}</td>"
+                "</tr>"
+            )
+
+        footer = """
+                </tbody>
+            </table>
+        </div>
+        """
+
+        return header + "\n".join(rows) + footer
+
+
+@dataclass
 class Block:
     """Base class for notebook blocks."""
 
@@ -136,7 +224,7 @@ class FormulaBlock(Block):
     variable_name: Optional[str] = None
     units: Optional[str] = None
 
-    def _parse_assignment(self, rhs: str, context: EvaluationContext) -> tuple[sp.Expr, str]:
+    def _parse_assignment(self, rhs: str, context: EvaluationContext) -> sp.Expr:
         """Parse the right-hand side of an assignment, capturing units when present."""
 
         rhs = rhs.strip()
@@ -148,15 +236,12 @@ class FormulaBlock(Block):
                 value = float(parts[0])
                 if len(parts) > 1:
                     self.units = " ".join(parts[1:])
-                expr = sp.Float(value)
-                return expr, sp.latex(expr)
+                return sp.Float(value)
             except ValueError:
                 pass
 
-        # Fall back to generic SymPy parsing without eager evaluation to preserve the
-        # original expression (e.g., keep ``sqrt(9)`` instead of reducing to ``3``).
-        expr = parse_expr(rhs, local_dict=context.symbols, evaluate=False)
-        return expr, sp.latex(expr)
+        # Fall back to generic SymPy parsing
+        return sp.sympify(rhs, locals=context.symbols)
 
     def evaluate(self, context: Optional[EvaluationContext] = None) -> None:
         """Parse and evaluate the expression using SymPy."""
@@ -176,7 +261,7 @@ class FormulaBlock(Block):
                 if lhs:
                     self.is_assignment = True
                     self.variable_name = lhs
-                    self.sympy_expr, expr_latex = self._parse_assignment(rhs, context)
+                    self.sympy_expr = self._parse_assignment(rhs, context)
                     substitution = self.sympy_expr.subs(context.numeric_values)
                     evaluated = sp.N(substitution)
                     if evaluated.is_real:
@@ -185,6 +270,7 @@ class FormulaBlock(Block):
                         except (TypeError, ValueError):
                             self.numeric_value = None
                     self.result = str(evaluated)
+                    expr_latex = sp.latex(self.sympy_expr) if self.sympy_expr is not None else html.escape(rhs)
                     display_latex = expr_latex
                     if self.units:
                         display_latex = f"{display_latex}\\;{html.escape(self.units)}"
@@ -193,7 +279,7 @@ class FormulaBlock(Block):
                     return
 
             # Regular expression (non-assignment)
-            self.sympy_expr = parse_expr(raw, local_dict=context.symbols, evaluate=False)
+            self.sympy_expr = sp.sympify(raw, locals=context.symbols)
             substitution = self.sympy_expr.subs(context.numeric_values)
             evaluated = sp.N(substitution)
             self.result = str(evaluated)
