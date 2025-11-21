@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 import sympy as sp
+from sympy.parsing.sympy_parser import parse_expr
 
 
 @dataclass
@@ -135,7 +136,7 @@ class FormulaBlock(Block):
     variable_name: Optional[str] = None
     units: Optional[str] = None
 
-    def _parse_assignment(self, rhs: str, context: EvaluationContext) -> sp.Expr:
+    def _parse_assignment(self, rhs: str, context: EvaluationContext) -> tuple[sp.Expr, str]:
         """Parse the right-hand side of an assignment, capturing units when present."""
 
         rhs = rhs.strip()
@@ -147,12 +148,15 @@ class FormulaBlock(Block):
                 value = float(parts[0])
                 if len(parts) > 1:
                     self.units = " ".join(parts[1:])
-                return sp.Float(value)
+                expr = sp.Float(value)
+                return expr, sp.latex(expr)
             except ValueError:
                 pass
 
-        # Fall back to generic SymPy parsing
-        return sp.sympify(rhs, locals=context.symbols)
+        # Fall back to generic SymPy parsing without eager evaluation to preserve the
+        # original expression (e.g., keep ``sqrt(9)`` instead of reducing to ``3``).
+        expr = parse_expr(rhs, local_dict=context.symbols, evaluate=False)
+        return expr, sp.latex(expr)
 
     def evaluate(self, context: Optional[EvaluationContext] = None) -> None:
         """Parse and evaluate the expression using SymPy."""
@@ -172,7 +176,7 @@ class FormulaBlock(Block):
                 if lhs:
                     self.is_assignment = True
                     self.variable_name = lhs
-                    self.sympy_expr = self._parse_assignment(rhs, context)
+                    self.sympy_expr, expr_latex = self._parse_assignment(rhs, context)
                     substitution = self.sympy_expr.subs(context.numeric_values)
                     evaluated = sp.N(substitution)
                     if evaluated.is_real:
@@ -181,7 +185,6 @@ class FormulaBlock(Block):
                         except (TypeError, ValueError):
                             self.numeric_value = None
                     self.result = str(evaluated)
-                    expr_latex = sp.latex(self.sympy_expr) if self.sympy_expr is not None else html.escape(rhs)
                     display_latex = expr_latex
                     if self.units:
                         display_latex = f"{display_latex}\\;{html.escape(self.units)}"
@@ -190,7 +193,7 @@ class FormulaBlock(Block):
                     return
 
             # Regular expression (non-assignment)
-            self.sympy_expr = sp.sympify(raw, locals=context.symbols)
+            self.sympy_expr = parse_expr(raw, local_dict=context.symbols, evaluate=False)
             substitution = self.sympy_expr.subs(context.numeric_values)
             evaluated = sp.N(substitution)
             self.result = str(evaluated)
