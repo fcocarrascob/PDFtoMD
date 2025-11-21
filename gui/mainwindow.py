@@ -1,12 +1,60 @@
-from PySide6.QtWidgets import QMainWindow, QLabel, QVBoxLayout, QWidget, QProgressBar, QMessageBox, QPushButton, QDialog, QLineEdit, QCheckBox, QHBoxLayout, QApplication, QComboBox, QFileDialog, QInputDialog
+from PySide6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+    QInputDialog,
+)
 from PySide6.QtCore import Qt, QThread, Signal, QSettings
 from PySide6.QtGui import QDragEnterEvent, QDropEvent
 from converter.engine import PDFConverter
 import os
 
 from converter.ai_agent import AIAgent
+from gui.notebook_tab import NotebookTab
 
-# ... (SettingsDialog remains unchanged) ...
+
+class SettingsDialog(QDialog):
+    """Dialog for configuring OpenAI credentials and model."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Settings")
+
+        layout = QVBoxLayout(self)
+
+        self.api_key_input = QLineEdit()
+        self.api_key_input.setEchoMode(QLineEdit.PasswordEchoOnEdit)
+        layout.addWidget(QLabel("OpenAI API Key"))
+        layout.addWidget(self.api_key_input)
+
+        self.model_combo = QComboBox()
+        self.model_combo.addItems(["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"])
+        layout.addWidget(QLabel("Model"))
+        layout.addWidget(self.model_combo)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def get_api_key(self):
+        return self.api_key_input.text().strip()
+
+    def get_model(self):
+        return self.model_combo.currentText()
 
 class ConversionWorker(QThread):
     finished = Signal(str)
@@ -42,28 +90,31 @@ class MainWindow(QMainWindow):
         self.total_files = 0
         self.current_file_index = 0
         
-        self.central_widget = QWidget()
-        self.setCentralWidget(self.central_widget)
-        
-        self.layout = QVBoxLayout(self.central_widget)
-        self.layout.setSpacing(20)
-        self.layout.setContentsMargins(40, 40, 40, 40)
-        
+        self.tab_widget = QTabWidget()
+        self.setCentralWidget(self.tab_widget)
+
+        self.pdf_tab = QWidget()
+        self.tab_widget.addTab(self.pdf_tab, "PDF to Markdown")
+
+        self.pdf_layout = QVBoxLayout(self.pdf_tab)
+        self.pdf_layout.setSpacing(20)
+        self.pdf_layout.setContentsMargins(40, 40, 40, 40)
+
         # Top Bar (Settings & Split)
         top_layout = QHBoxLayout()
-        
+
         self.split_btn = QPushButton("Split PDF")
         self.split_btn.clicked.connect(self.split_pdf_dialog)
         top_layout.addWidget(self.split_btn)
-        
+
         top_layout.addStretch()
-        
+
         self.settings_btn = QPushButton("Settings")
         self.settings_btn.clicked.connect(self.open_settings)
         top_layout.addWidget(self.settings_btn)
-        
-        self.layout.addLayout(top_layout)
-        
+
+        self.pdf_layout.addLayout(top_layout)
+
         # Drop Area
         self.label = QLabel("Drag & Drop PDF files here")
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -81,18 +132,18 @@ class MainWindow(QMainWindow):
                 background-color: #3d3d3d;
             }
         """)
-        self.layout.addWidget(self.label)
-        
+        self.pdf_layout.addWidget(self.label)
+
         # Queue Info
         self.queue_label = QLabel("Queue: 0 files")
         self.queue_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.layout.addWidget(self.queue_label)
-        
+        self.pdf_layout.addWidget(self.queue_label)
+
         # AI Toggle
         self.ai_checkbox = QCheckBox("Use AI Agent (OpenAI)")
         self.ai_checkbox.setToolTip("Requires API Key in Settings. Slower but better for complex PDFs.")
-        self.layout.addWidget(self.ai_checkbox)
-        
+        self.pdf_layout.addWidget(self.ai_checkbox)
+
         # Start Button
         self.start_btn = QPushButton("Start Processing")
         self.start_btn.setEnabled(False)
@@ -113,23 +164,27 @@ class MainWindow(QMainWindow):
                 background-color: #2ecc71;
             }
         """)
-        self.layout.addWidget(self.start_btn)
-        
+        self.pdf_layout.addWidget(self.start_btn)
+
         # Progress Bar
         self.progress = QProgressBar()
         self.progress.setTextVisible(True)
         self.progress.setRange(0, 100)
         self.progress.setValue(0)
         self.progress.hide()
-        self.layout.addWidget(self.progress)
-        
+        self.pdf_layout.addWidget(self.progress)
+
         # Status Label
         self.status_label = QLabel("")
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.layout.addWidget(self.status_label)
-        
+        self.pdf_layout.addWidget(self.status_label)
+
         # Enable drag and drop
         self.setAcceptDrops(True)
+
+        # Calculation Notebook tab
+        self.notebook_tab = NotebookTab(self)
+        self.tab_widget.addTab(self.notebook_tab, "Calculation Notebook")
 
     def open_settings(self):
         dialog = SettingsDialog(self)
