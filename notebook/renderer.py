@@ -24,11 +24,13 @@ class NotebookRenderer:
 
     def __init__(self, theme: NotebookTheme | None = None) -> None:
         self.theme = theme or NotebookTheme()
+        self._last_precision = 2
 
     def render(self, document: Document) -> str:
         """Return full HTML including MathJax and styling."""
 
         context = document.evaluate()
+        self._last_precision = context.precision
         body = "\n".join(self._render_block(block) for block in document.blocks)
         if not body:
             body = "<p class='text-block'>No blocks yet.</p>"
@@ -65,7 +67,7 @@ class NotebookRenderer:
 
         rows = []
         for variable in variables:
-            value = self._format_value(variable.numeric_value, variable.units)
+            value = self._format_value(variable.numeric_value, variable.units, self._last_precision)
             rows.append(
                 "<tr>"
                 f"<td>{html.escape(variable.name)}</td>"
@@ -92,12 +94,12 @@ class NotebookRenderer:
         )
 
     @staticmethod
-    def _format_value(numeric_value, units: str | None) -> str:
+    def _format_value(numeric_value, units: str | None, precision: int) -> str:
         """Format numeric values and append units if present."""
 
         if numeric_value is None:
             return ""
-        formatted = f"{float(numeric_value):.2f}"
+        formatted = f"{float(numeric_value):.{precision}f}"
         return f"{formatted} {units}" if units else formatted
 
     def _stylesheet(self) -> str:
@@ -109,6 +111,7 @@ class NotebookRenderer:
             .formula-block {{ margin-bottom: 16px; padding: 12px; background: {self.theme.panel}; border-radius: 6px; border: 1px solid {self.theme.border}; }}
             .formula-input {{ font-size: 18px; margin-bottom: 6px; }}
             .formula-result {{ color: {self.theme.accent}; font-weight: bold; }}
+            .formula-error {{ color: #e57373; font-weight: bold; }}
             .variable-table {{ margin-top: 24px; background: {self.theme.panel}; padding: 12px; border-radius: 6px; border: 1px solid {self.theme.border}; }}
             .variable-table h3 {{ margin-top: 0; }}
             .variable-table table {{ width: 100%; border-collapse: collapse; }}

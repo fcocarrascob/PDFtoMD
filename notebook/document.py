@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import html
+import re
 from dataclasses import dataclass, field
 from typing import List, Optional, TYPE_CHECKING
 
@@ -42,6 +43,8 @@ class EvaluationContext:
     numeric_values: dict[str, float] = field(default_factory=dict)
     quantities: dict[str, Quantity] = field(default_factory=dict)
     variables: list[VariableRecord] = field(default_factory=list)
+    precision: int = 2
+    simplify_units: bool = True
 
     def __enter__(self) -> "EvaluationContext":
         return self
@@ -106,27 +109,27 @@ class FormulaBlock(Block):
     variable_name: Optional[str] = None
     units: Optional[str] = None
     quantity: Optional[Quantity] = None
+    error_message: Optional[str] = None
 
-    def _parse_assignment(self, rhs: str, context: EvaluationContext) -> tuple[sp.Expr, Optional[Quantity]]:
+    def _parse_assignment(self, rhs: str, context: EvaluationContext) -> tuple[sp.Expr | None, Optional[Quantity]]:
         """Parse the right-hand side of an assignment, capturing units when present."""
 
         rhs = rhs.strip()
+        ureg = get_unit_registry()
+        variable_names = set(context.symbols.keys())
+        tokens = set(re.findall(r"[A-Za-z_][A-Za-z0-9_]*", rhs))
+        if tokens & variable_names:
+            return sp.sympify(rhs, locals=context.symbols), None
 
-        # Detect numeric literal followed by optional units, e.g. "2.5 m"
-        parts = rhs.split()
-        if len(parts) >= 1:
-            try:
-                value = float(parts[0])
-                if len(parts) > 1:
-                    unit_registry = get_unit_registry()
-                    units = " ".join(parts[1:])
-                    quantity = value * unit_registry(units)
-                    return sp.Float(value), quantity
-                return sp.Float(value), None
-            except ValueError:
-                pass
+        # Try pint parser first to support direct unit math (e.g., "3 m + 4 cm").
+        try:
+            parsed = ureg.parse_expression(rhs.replace("^", "**"))
+            if isinstance(parsed, Quantity):
+                return None, parsed
+        except Exception:
+            pass
 
-        # Fall back to generic SymPy parsing
+        # Fall back to generic SymPy parsing with symbol registry.
         return sp.sympify(rhs, locals=context.symbols), None
 
     def _evaluate_with_pint(self, expression: str, context: EvaluationContext):
@@ -139,13 +142,21 @@ class FormulaBlock(Block):
         # Fallback to numeric-only substitutions for symbols without units.
         for name, value in context.numeric_values.items():
             env.setdefault(name, value)
+        # Seed unit names so expressions con unidades literales (ej. "3 m + 4 cm") funcionen.
+        for unit_name in ureg._units:  # pylint: disable=protected-access
+            try:
+                env.setdefault(unit_name, getattr(ureg, unit_name))
+            except Exception:
+                continue
 
         # Normalize caret to python exponent for eval friendliness.
         expr = expression.replace("^", "**")
+        # Insert multiplicative operator when a number is directly followed by a unit with space.
+        expr = re.sub(r"(?<=\\d)\\s+(?=[A-Za-z])", " * ", expr)
         try:
-            return eval(expr, {"__builtins__": {}}, env)  # pylint: disable=eval-used
-        except Exception:
-            return None
+            return eval(expr, {"__builtins__": {}}, env), None  # pylint: disable=eval-used
+        except Exception as exc:  # capture to surface errors in UI
+            return None, exc
 
     @staticmethod
     def _to_quantity(value) -> Optional[Quantity]:
@@ -156,31 +167,37 @@ class FormulaBlock(Block):
         return None
 
     @staticmethod
-    def _format_numeric_value(value: float) -> str:
+    def _format_numeric_value(value: float, precision: int) -> str:
         """Format numeric values consistently for display."""
 
-        return f"{value:.2f}"
+        return f"{value:.{precision}f}"
 
     @staticmethod
-    def _format_quantity(quantity: Quantity) -> tuple[float, str]:
+    def _format_quantity(quantity: Quantity, context: EvaluationContext) -> tuple[float, str]:
         """Normalize a quantity for display and numeric storage."""
 
-        ureg = get_unit_registry()
-        try:
-            # Custom simplifications for common mechanical combos.
-            if quantity.check("[pressure] * [length]"):
-                quantity = quantity.to(ureg.newton / ureg.meter)
-            elif quantity.check("[pressure]"):
-                quantity = quantity.to(ureg.pascal)
-        except Exception:
-            pass
+        # Optionally simplify units; if not, keep original units.
+        if context.simplify_units:
+            ureg = get_unit_registry()
+            try:
+                if quantity.check("[pressure] * [length]"):
+                    quantity = quantity.to(ureg.newton / ureg.meter)
+                elif quantity.check("[pressure]"):
+                    quantity = quantity.to(ureg.pascal)
+            except Exception:
+                pass
+            try:
+                quantity = quantity.to_compact()
+            except Exception:
+                pass
+            magnitude = float(quantity.magnitude)
+            units_text = f"{quantity.units:~P}".replace("\u00b7", "*").replace(" ", "")
+            return magnitude, units_text
 
-        try:
-            compact = quantity.to_compact()
-        except Exception:
-            compact = quantity
-        units_text = f"{compact.units:~P}".replace("\u00b7", "*").replace(" ", "")
-        return float(compact.magnitude), units_text
+        # No simplification: keep as provided.
+        magnitude = float(quantity.magnitude)
+        units_text = f"{quantity.units:~P}".replace("\u00b7", "*").replace(" ", "")
+        return magnitude, units_text
 
     def evaluate(self, context: Optional[EvaluationContext] = None) -> None:
         """Parse and evaluate the expression using SymPy."""
@@ -191,6 +208,7 @@ class FormulaBlock(Block):
         self.quantity = None
         self.variable_name = None
         self.numeric_value = None
+        self.error_message = None
 
         raw = self.raw.strip()
         try:
@@ -205,20 +223,22 @@ class FormulaBlock(Block):
                     # First try with explicit quantity from parsing.
                     if quantity is not None:
                         self.quantity = quantity
-                        magnitude, normalized_units = self._format_quantity(quantity)
+                        magnitude, normalized_units = self._format_quantity(quantity, context)
                         self.numeric_value = magnitude
                         self.units = normalized_units
-                        self.result = f"{self._format_numeric_value(magnitude)} {normalized_units}"
+                        self.result = f"{self._format_numeric_value(magnitude, context.precision)} {normalized_units}"
                     else:
                         # Try pint-eval using previously defined quantities.
-                        pint_value = self._evaluate_with_pint(rhs, context)
+                        pint_value, pint_error = self._evaluate_with_pint(rhs, context)
+                        if pint_error:
+                            raise pint_error
                         quantity_value = self._to_quantity(pint_value)
                         if quantity_value is not None:
                             self.quantity = quantity_value
-                            magnitude, normalized_units = self._format_quantity(quantity_value)
+                            magnitude, normalized_units = self._format_quantity(quantity_value, context)
                             self.numeric_value = magnitude
                             self.units = normalized_units
-                            self.result = f"{self._format_numeric_value(magnitude)} {normalized_units}"
+                            self.result = f"{self._format_numeric_value(magnitude, context.precision)} {normalized_units}"
                         else:
                             substitution = self.sympy_expr.subs(context.numeric_values)
                             evaluated = sp.N(substitution)
@@ -229,23 +249,22 @@ class FormulaBlock(Block):
                                     self.numeric_value = None
                             self.result = str(evaluated)
                     expr_latex = sp.latex(self.sympy_expr) if self.sympy_expr is not None else html.escape(rhs)
-                    display_latex = expr_latex
-                    if self.units:
-                        display_latex = f"{display_latex}\\;{html.escape(self.units)}"
-                    self.latex = f"{html.escape(lhs)} = {display_latex}"
+                    self.latex = f"{html.escape(lhs)} = {expr_latex}"
                     context.register_variable(lhs, expr_latex, self.numeric_value, self.units, self.quantity)
                     return
 
             # Regular expression (non-assignment)
             self.sympy_expr = sp.sympify(raw, locals=context.symbols)
-            pint_value = self._evaluate_with_pint(raw, context)
+            pint_value, pint_error = self._evaluate_with_pint(raw, context)
+            if pint_error:
+                raise pint_error
             quantity_value = self._to_quantity(pint_value)
             if quantity_value is not None:
                 self.quantity = quantity_value
-                magnitude, normalized_units = self._format_quantity(quantity_value)
+                magnitude, normalized_units = self._format_quantity(quantity_value, context)
                 self.numeric_value = magnitude
                 self.units = normalized_units
-                self.result = f"{self._format_numeric_value(magnitude)} {normalized_units}"
+                self.result = f"{self._format_numeric_value(magnitude, context.precision)} {normalized_units}"
             else:
                 substitution = self.sympy_expr.subs(context.numeric_values)
                 evaluated = sp.N(substitution)
@@ -259,15 +278,20 @@ class FormulaBlock(Block):
         except Exception as exc:  # pylint: disable=broad-except
             # Keep evaluation errors but continue showing them in the UI.
             self.sympy_expr = None
-            self.result = f"Error: {exc}"
+            self.result = None
             self.latex = None
+            self.error_message = str(exc)
 
     def to_html(self) -> str:
         if self.sympy_expr is None and self.result is None:
             self.evaluate()
 
         latex_expr = self.latex or html.escape(self.raw)
-        result_html = f"<div class='formula-result'>= {html.escape(self.result or '')}</div>"
+        result_html = ""
+        if self.error_message:
+            result_html = f"<div class='formula-error'>Error: {html.escape(self.error_message)}</div>"
+        else:
+            result_html = f"<div class='formula-result'>= {html.escape(self.result or '')}</div>"
         return (
             "<div class='formula-block'>"
             f"<div class='formula-input'>$$ {latex_expr} $$</div>"
@@ -281,11 +305,13 @@ class Document:
     """Ordered collection of blocks representing a notebook."""
 
     blocks: List[Block] = field(default_factory=list)
+    precision: int = 2
+    simplify_units: bool = True
 
     def evaluate(self) -> EvaluationContext:
         """Evaluate all formula blocks within a shared context."""
 
-        with EvaluationContext() as context:
+        with EvaluationContext(precision=self.precision, simplify_units=self.simplify_units) as context:
             for block in self.blocks:
                 if isinstance(block, FormulaBlock):
                     block.evaluate(context)

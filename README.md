@@ -30,6 +30,8 @@ Aplicación de escritorio en PySide6 que combina dos pestañas:
    - `L = 3 MPa`
    - `B = 4 mm`
    - `P = B * L` → se mostrará `12.00 kN/m` con la tabla de variables debajo.
+   - Para convertir unidades, escribe o selecciona una unidad en el combo editable y pulsa “Convert” para insertar `.to("<unidad>")` en la expresión (p.ej. `F.to("N")`).
+   - Ajusta la “Precision” (2/3/4/6 decimales) y el toggle “Simplify units” según necesites ver más detalle o mantener unidades originales.
 
 ## Funciones actuales
 - Conversión de PDFs a Markdown con o sin OpenAI.
@@ -37,12 +39,12 @@ Aplicación de escritorio en PySide6 que combina dos pestañas:
 - Cuaderno con bloques ordenados de texto/fórmula, evaluación incremental.
 - Manejo de unidades con pint y formateo compacto en la preview.
 - Previsualización HTML con MathJax y tabla de variables evaluadas.
-- Barra de atajos para insertar operadores y unidades comunes.
+- Barra de atajos para insertar operadores, unidades comunes, conversión (`to("<unit>")`) y selector de precisión/simplificación de unidades.
+- Mensajes de error en rojo cuando una expresión/unidad es inválida (sin registrar la variable).
 
-## TODO / posibles mejoras
-- Añadir conversión/selección de unidades personalizada en la UI (combo editable + `to(<unit>)`).
-- Permitir no simplificar unidades (ej. mantener MPa·mm) según preferencia de usuario.
-- Undo/redo y mover bloques (drag & drop) en el notebook.
-- Validaciones y mensajes de error más claros en fórmulas con unidades inválidas.
-- Tests automatizados adicionales para casos mixtos (potencias, divisiones con unidades, conversiones).
-- Configuración persistente de la barra de unidades (lista editable por usuario).
+## TODO / posibles mejoras (seguimiento)
+1. Undo/redo y mover bloques (drag & drop) en el notebook.
+2. Tests automatizados adicionales para casos mixtos (potencias, divisiones con unidades, conversiones).
+3. Configuración persistente de la barra de unidades (lista editable por usuario).
+4. Editor de plantillas: insertar expresiones predefinidas (σ = F/A, M = F·L, etc.).
+5. Exportar notebook a Markdown/HTML conservando tabla de variables y MathJax.

@@ -1,10 +1,11 @@
 """Notebook tab with SymPy-powered formula preview."""
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QSettings
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QComboBox,
+    QCheckBox,
     QListWidget,
     QListWidgetItem,
     QPushButton,
@@ -26,7 +27,11 @@ class NotebookTab(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.document = Document()
+        self.settings = QSettings("MyCompany", "PDFtoMD")
+        precision = int(self.settings.value("notebook_precision", 2))
+        simplify_units = self.settings.value("notebook_simplify_units", "true") == "true"
+
+        self.document = Document(precision=precision, simplify_units=simplify_units)
         self.renderer = NotebookRenderer()
 
         # UI elements
@@ -175,14 +180,33 @@ class NotebookTab(QWidget):
             layout.addWidget(btn)
 
         self.unit_combo = QComboBox()
+        self.unit_combo.setEditable(True)
         self.unit_combo.addItems(COMMON_UNITS)
         unit_btn = QToolButton()
         unit_btn.setText("Unit")
         unit_btn.setToolTip("Insert selected unit")
         unit_btn.clicked.connect(self.insert_selected_unit)
+        convert_btn = QToolButton()
+        convert_btn.setText("Convert")
+        convert_btn.setToolTip("Insert to(<unit>) for conversion")
+        convert_btn.clicked.connect(self.insert_conversion_to_unit)
+
+        self.precision_combo = QComboBox()
+        self.precision_combo.addItems(["2", "3", "4", "6"])
+        self.precision_combo.setCurrentText(str(self.document.precision))
+        self.precision_combo.setToolTip("Decimal precision")
+        self.precision_combo.currentTextChanged.connect(self.on_precision_changed)
+
+        self.simplify_checkbox = QCheckBox("Simplify units")
+        self.simplify_checkbox.setChecked(self.document.simplify_units)
+        self.simplify_checkbox.setToolTip("Toggle unit simplification/compaction")
+        self.simplify_checkbox.stateChanged.connect(self.on_simplify_toggled)
 
         layout.addWidget(self.unit_combo)
         layout.addWidget(unit_btn)
+        layout.addWidget(convert_btn)
+        layout.addWidget(self.precision_combo)
+        layout.addWidget(self.simplify_checkbox)
         layout.addStretch()
         return container
 
@@ -198,3 +222,30 @@ class NotebookTab(QWidget):
 
         unit = self.unit_combo.currentText()
         self.insert_snippet(f" {unit}")
+
+    def insert_conversion_to_unit(self) -> None:
+        """Insert a pint conversion using the selected or typed unit."""
+
+        unit = self.unit_combo.currentText().strip()
+        if not unit:
+            return
+        self.insert_snippet(f".to(\"{unit}\")")
+
+    def on_precision_changed(self, value: str) -> None:
+        """Update document precision and persist setting."""
+
+        try:
+            precision = int(value)
+        except ValueError:
+            return
+        self.document.precision = precision
+        self.settings.setValue("notebook_precision", str(precision))
+        self.update_preview()
+
+    def on_simplify_toggled(self, _state: int) -> None:
+        """Toggle unit simplification and persist setting."""
+
+        simplify = self.simplify_checkbox.isChecked()
+        self.document.simplify_units = simplify
+        self.settings.setValue("notebook_simplify_units", "true" if simplify else "false")
+        self.update_preview()
