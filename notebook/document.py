@@ -6,6 +6,102 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 import sympy as sp
+from sympy.parsing.sympy_parser import parse_expr
+
+
+@dataclass
+class SymbolRegistry(dict):
+    """Dictionary that lazily creates SymPy symbols on demand."""
+
+    def __getitem__(self, key: str) -> sp.Symbol:  # pragma: no cover - simple helper
+        # Avoid shadowing SymPy's own callables such as Integer, Symbol, etc.
+        if dict.__contains__(self, key):
+            return dict.__getitem__(self, key)
+
+        if hasattr(sp, key):
+            raise KeyError(key)
+
+        symbol = sp.Symbol(key)
+        dict.__setitem__(self, key, symbol)
+        return symbol
+
+
+@dataclass
+class VariableRecord:
+    """Stores the evaluation details for a single variable."""
+
+    name: str
+    expression: str
+    numeric_value: Optional[float] = None
+    units: Optional[str] = None
+
+
+@dataclass
+class EvaluationContext:
+    """Context manager that keeps symbol and numeric value registries."""
+
+    symbols: SymbolRegistry = field(default_factory=SymbolRegistry)
+    numeric_values: dict[str, float] = field(default_factory=dict)
+    variables: list[VariableRecord] = field(default_factory=list)
+
+    def __enter__(self) -> "EvaluationContext":
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+        return False
+
+    def register_variable(
+        self, name: str, expression: str, numeric_value: Optional[float], units: Optional[str]
+    ) -> None:
+        """Add a variable evaluation record and persist its numeric value."""
+
+        _ = self.symbols[name]
+        if numeric_value is not None:
+            self.numeric_values[name] = numeric_value
+        self.variables.append(
+            VariableRecord(
+                name=name,
+                expression=expression,
+                numeric_value=numeric_value,
+                units=units,
+            )
+        )
+
+    def variable_table_html(self) -> str:
+        """Render the registry as an HTML table for the preview."""
+
+        if not self.variables:
+            return ""
+
+        header = """
+        <div class='variable-table'>
+            <h3>Variables</h3>
+            <table>
+                <thead>
+                    <tr><th>Nombre</th><th>Expresión</th><th>Valor</th><th>Unidades</th></tr>
+                </thead>
+                <tbody>
+        """
+
+        rows = []
+        for variable in self.variables:
+            value = "" if variable.numeric_value is None else str(variable.numeric_value)
+            rows.append(
+                "<tr>"
+                f"<td>{html.escape(variable.name)}</td>"
+                f"<td>$$ {variable.expression} $$</td>"
+                f"<td>{html.escape(value)}</td>"
+                f"<td>{html.escape(variable.units or '')}</td>"
+                "</tr>"
+            )
+
+        footer = """
+                </tbody>
+            </table>
+        </div>
+        """
+
+        return header + "\n".join(rows) + footer
 
 
 @dataclass
