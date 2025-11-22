@@ -58,6 +58,11 @@ class NotebookTab(QWidget):
         delete_btn = QPushButton("Delete Selected")
         delete_btn.clicked.connect(self.delete_selected_block)
 
+        export_html_btn = QPushButton("Export HTML")
+        export_html_btn.clicked.connect(self.export_html)
+        export_md_btn = QPushButton("Export Markdown")
+        export_md_btn.clicked.connect(self.export_markdown)
+
         move_up_btn = QPushButton("Move Up")
         move_up_btn.clicked.connect(lambda: self.move_selected_block(-1))
         move_down_btn = QPushButton("Move Down")
@@ -76,6 +81,8 @@ class NotebookTab(QWidget):
         left_layout.addWidget(add_text_btn)
         left_layout.addWidget(add_formula_btn)
         left_layout.addWidget(delete_btn)
+        left_layout.addWidget(export_html_btn)
+        left_layout.addWidget(export_md_btn)
         left_layout.addWidget(move_up_btn)
         left_layout.addWidget(move_down_btn)
         left_layout.addWidget(undo_btn)
@@ -225,6 +232,51 @@ class NotebookTab(QWidget):
         """Render the document into the web view with MathJax."""
         html_content = self.document.to_html(renderer=self.renderer)
         self.preview.setHtml(html_content)
+
+    def export_html(self) -> None:
+        """Persist the rendered notebook to an HTML file."""
+
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Export Notebook as HTML", "", "HTML Files (*.html)"
+        )
+        if not path:
+            return
+
+        mathjax_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Optional MathJax bundle (leave empty to use CDN)",
+            "",
+            "JavaScript Files (*.js);;All Files (*)",
+        )
+        if not mathjax_path:
+            mathjax_path = None
+
+        try:
+            self.document.save_html(
+                path,
+                renderer=self.renderer,
+                mathjax_path=mathjax_path,
+            )
+            QMessageBox.information(self, "Export complete", f"Saved HTML to {path}")
+        except Exception as exc:  # pylint: disable=broad-except
+            QMessageBox.critical(self, "Export failed", str(exc))
+
+    def export_markdown(self) -> None:
+        """Save the notebook as a Markdown document."""
+
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Export Notebook as Markdown", "", "Markdown Files (*.md)"
+        )
+        if not path:
+            return
+
+        try:
+            self.document.save_markdown(path)
+            QMessageBox.information(
+                self, "Export complete", f"Saved Markdown to {path}"
+            )
+        except Exception as exc:  # pylint: disable=broad-except
+            QMessageBox.critical(self, "Export failed", str(exc))
 
     # Toolbar helpers
     def _build_toolbar(self) -> QWidget:

@@ -25,8 +25,19 @@ class NotebookRenderer:
     def __init__(self, theme: NotebookTheme | None = None) -> None:
         self.theme = theme or NotebookTheme()
 
-    def render(self, document: Document) -> str:
-        """Return full HTML including MathJax and styling."""
+    def render(
+        self,
+        document: Document,
+        *,
+        mathjax_path: str | None = None,
+        mathjax_url: str | None = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js",
+    ) -> str:
+        """Return full HTML including MathJax and styling.
+
+        The caller can provide ``mathjax_path`` to embed a local MathJax bundle for
+        offline viewing. If omitted, the renderer falls back to the provided
+        ``mathjax_url`` (defaulting to the CDN build).
+        """
 
         context = document.evaluate()
         body = "\n".join(self._render_block(block) for block in document.blocks)
@@ -43,12 +54,13 @@ class NotebookRenderer:
         if log_panel:
             body = f"{body}\n{log_panel}"
 
+        mathjax_script = self._mathjax_script(mathjax_path, mathjax_url)
         return f"""
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset='utf-8'>
-            <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+            {mathjax_script}
             <style>
                 {self._stylesheet()}
             </style>
@@ -202,3 +214,20 @@ class NotebookRenderer:
             .log-panel th, .log-panel td {{ padding: 6px 8px; text-align: left; border-bottom: 1px solid {self.theme.border}; }}
             .log-panel th {{ color: {self.theme.text}; opacity: 0.8; }}
         """
+
+    @staticmethod
+    def _mathjax_script(mathjax_path: str | None, mathjax_url: str | None) -> str:
+        """Return the MathJax loader script, embedding when a local path is given."""
+
+        if mathjax_path:
+            try:
+                with open(mathjax_path, "r", encoding="utf-8") as handle:
+                    content = handle.read()
+                return f"<script>{content}</script>"
+            except OSError:
+                # Fall back to external URL if the path cannot be read.
+                pass
+
+        if mathjax_url:
+            return f"<script src=\"{html.escape(mathjax_url)}\"></script>"
+        return ""
