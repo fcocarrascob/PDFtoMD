@@ -52,6 +52,5 @@ def get_unit_registry() -> UnitRegistry:
     """Return a singleton :class:`pint.UnitRegistry` instance."""
 
     registry = UnitRegistry()
-    registry.default_format = "~P"
     return registry
 
