@@ -143,9 +143,9 @@ class FormulaBlock(Block):
         # Normalize caret to python exponent for eval friendliness.
         expr = expression.replace("^", "**")
         try:
-            return eval(expr, {"__builtins__": {}}, env)  # pylint: disable=eval-used
-        except Exception:
-            return None
+            return eval(expr, {"__builtins__": {}}, env), None  # pylint: disable=eval-used
+        except Exception as exc:
+            return None, exc
 
     @staticmethod
     def _to_quantity(value) -> Optional[Quantity]:
@@ -211,7 +211,14 @@ class FormulaBlock(Block):
                         self.result = f"{self._format_numeric_value(magnitude)} {normalized_units}"
                     else:
                         # Try pint-eval using previously defined quantities.
-                        pint_value = self._evaluate_with_pint(rhs, context)
+                        pint_value, pint_error = self._evaluate_with_pint(rhs, context)
+                        if pint_error is not None:
+                            expr_latex = sp.latex(self.sympy_expr) if self.sympy_expr is not None else html.escape(rhs)
+                            self.result = f"Error evaluating units: {pint_error}"
+                            self.latex = f"{html.escape(lhs)} = {expr_latex}"
+                            context.register_variable(lhs, expr_latex, None, None, None)
+                            return
+
                         quantity_value = self._to_quantity(pint_value)
                         if quantity_value is not None:
                             self.quantity = quantity_value
@@ -238,7 +245,12 @@ class FormulaBlock(Block):
 
             # Regular expression (non-assignment)
             self.sympy_expr = sp.sympify(raw, locals=context.symbols)
-            pint_value = self._evaluate_with_pint(raw, context)
+            pint_value, pint_error = self._evaluate_with_pint(raw, context)
+            if pint_error is not None:
+                self.result = f"Error evaluating units: {pint_error}"
+                self.latex = sp.latex(self.sympy_expr)
+                return
+
             quantity_value = self._to_quantity(pint_value)
             if quantity_value is not None:
                 self.quantity = quantity_value
