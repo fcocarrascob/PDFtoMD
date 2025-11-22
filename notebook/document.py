@@ -577,12 +577,68 @@ class Document:
     def to_html(
         self,
         renderer: Optional["NotebookRenderer"] = None,
-        options: Optional[NotebookOptions] = None,
+        *,
+        mathjax_path: str | None = None,
+        mathjax_url: str | None = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js",
     ) -> str:
         """Create an HTML preview using the provided renderer."""
 
         renderer = renderer or self._default_renderer()
-        return renderer.render(self, options=options)
+        return renderer.render(self, mathjax_path=mathjax_path, mathjax_url=mathjax_url)
+
+    def save_html(
+        self,
+        path: str,
+        renderer: Optional["NotebookRenderer"] = None,
+        *,
+        mathjax_path: str | None = None,
+        mathjax_url: str | None = None,
+    ) -> None:
+        """Render the document to HTML and persist it to disk."""
+
+        html_content = self.to_html(
+            renderer=renderer, mathjax_path=mathjax_path, mathjax_url=mathjax_url
+        )
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(html_content)
+
+    def to_markdown(self) -> str:
+        """Serialize the notebook to Markdown with LaTeX formulas and variables."""
+
+        context = self.evaluate()
+        lines: list[str] = []
+
+        for block in self.blocks:
+            if isinstance(block, TextBlock):
+                lines.append(block.raw.strip())
+            elif isinstance(block, FormulaBlock):
+                if block.latex is None:
+                    block.evaluate(context)
+                latex_expr = block.latex or html.escape(block.raw)
+                lines.append(f"$$ {latex_expr} $$")
+                if block.result:
+                    lines.append(f"Resultado: {block.result}")
+
+        if context.variables:
+            lines.append("\n## Variables")
+            lines.append("| Name | Expression | Value | Units |")
+            lines.append("| --- | --- | --- | --- |")
+            for variable in context.variables:
+                expression = variable.expression
+                value = "" if variable.numeric_value is None else f"{variable.numeric_value:.2f}"
+                units = variable.units or ""
+                lines.append(
+                    f"| {variable.name} | $$ {expression} $$ | {value} | {units} |"
+                )
+
+        return "\n".join(line for line in lines if line is not None)
+
+    def save_markdown(self, path: str) -> None:
+        """Persist the Markdown export to disk."""
+
+        markdown = self.to_markdown()
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(markdown)
 
     @staticmethod
     def _default_renderer() -> "NotebookRenderer":
