@@ -2,11 +2,14 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QComboBox,
+    QFileDialog,
     QListWidget,
     QListWidgetItem,
+    QMessageBox,
     QPushButton,
     QSplitter,
     QTextEdit,
@@ -36,6 +39,7 @@ class NotebookTab(QWidget):
 
         self._setup_ui()
         self._connect_signals()
+        self._setup_shortcuts()
         self._seed_document()
 
     def _setup_ui(self) -> None:
@@ -54,9 +58,30 @@ class NotebookTab(QWidget):
         delete_btn = QPushButton("Delete Selected")
         delete_btn.clicked.connect(self.delete_selected_block)
 
+        move_up_btn = QPushButton("Move Up")
+        move_up_btn.clicked.connect(lambda: self.move_selected_block(-1))
+        move_down_btn = QPushButton("Move Down")
+        move_down_btn.clicked.connect(lambda: self.move_selected_block(1))
+
+        undo_btn = QPushButton("Undo")
+        undo_btn.clicked.connect(self.undo_action)
+        redo_btn = QPushButton("Redo")
+        redo_btn.clicked.connect(self.redo_action)
+
+        save_btn = QPushButton("Save Notebook")
+        save_btn.clicked.connect(self.save_document)
+        load_btn = QPushButton("Load Notebook")
+        load_btn.clicked.connect(self.load_document)
+
         left_layout.addWidget(add_text_btn)
         left_layout.addWidget(add_formula_btn)
         left_layout.addWidget(delete_btn)
+        left_layout.addWidget(move_up_btn)
+        left_layout.addWidget(move_down_btn)
+        left_layout.addWidget(undo_btn)
+        left_layout.addWidget(redo_btn)
+        left_layout.addWidget(save_btn)
+        left_layout.addWidget(load_btn)
         left_layout.addWidget(self.block_list, 1)
 
         # Right column: editor + preview stacked vertically
@@ -79,6 +104,12 @@ class NotebookTab(QWidget):
     def _connect_signals(self) -> None:
         self.block_list.currentItemChanged.connect(self.on_block_selected)
         self.editor.textChanged.connect(self.on_editor_changed)
+
+    def _setup_shortcuts(self) -> None:
+        QShortcut(QKeySequence("Ctrl+Up"), self, activated=lambda: self.move_selected_block(-1))
+        QShortcut(QKeySequence("Ctrl+Down"), self, activated=lambda: self.move_selected_block(1))
+        QShortcut(QKeySequence.StandardKey.Undo, self, activated=self.undo_action)
+        QShortcut(QKeySequence.StandardKey.Redo, self, activated=self.redo_action)
 
     def _seed_document(self) -> None:
         """Add a starter text and formula block so the preview is not empty."""
@@ -107,16 +138,60 @@ class NotebookTab(QWidget):
     def delete_selected_block(self) -> None:
         current_row = self.block_list.currentRow()
         if 0 <= current_row < len(self.document.blocks):
-            del self.document.blocks[current_row]
+            self.document.delete_block(current_row)
             self._refresh_block_list(select_row=max(0, current_row - 1))
             self.update_preview()
+
+    def move_selected_block(self, direction: int) -> None:
+        current_row = self.block_list.currentRow()
+        if current_row < 0:
+            return
+        target_row = current_row + direction
+        if self.document.move_block(current_row, target_row):
+            self._refresh_block_list(select_row=target_row)
+            self.update_preview()
+
+    def undo_action(self) -> None:
+        if self.document.undo():
+            self._refresh_block_list(select_row=min(self.block_list.currentRow(), len(self.document.blocks) - 1))
+            self.update_preview()
+
+    def redo_action(self) -> None:
+        if self.document.redo():
+            self._refresh_block_list(select_row=min(self.block_list.currentRow(), len(self.document.blocks) - 1))
+            self.update_preview()
+
+    def save_document(self) -> None:
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Save Notebook", "", "Notebook Files (*.json *.yaml *.yml)"
+        )
+        if not path:
+            return
+        try:
+            self.document.save(path)
+        except Exception as exc:  # pylint: disable=broad-except
+            QMessageBox.critical(self, "Save Failed", str(exc))
+
+    def load_document(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Load Notebook", "", "Notebook Files (*.json *.yaml *.yml)"
+        )
+        if not path:
+            return
+        try:
+            self.document = Document.load(path)
+            self.renderer = NotebookRenderer()
+            self._refresh_block_list()
+            self.update_preview()
+        except Exception as exc:  # pylint: disable=broad-except
+            QMessageBox.critical(self, "Load Failed", str(exc))
 
     # UI updates
     def _refresh_block_list(self, select_last: bool = False, select_row: int | None = None) -> None:
         self.block_list.clear()
         for idx, block in enumerate(self.document.blocks):
             title = "Text" if isinstance(block, TextBlock) else "Formula"
-            item = QListWidgetItem(f"{idx + 1}. {title}")
+            item = QListWidgetItem(f"{idx + 1}. {title} [{block.block_id[:6]}]")
             self.block_list.addItem(item)
         if self.document.blocks:
             if select_last:

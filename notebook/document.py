@@ -5,6 +5,15 @@ import html
 from functools import cached_property
 from dataclasses import dataclass, field
 from typing import List, Optional, TYPE_CHECKING
+from uuid import uuid4
+import copy
+import json
+import os
+
+try:
+    import yaml
+except Exception:  # pragma: no cover - optional dependency
+    yaml = None
 
 import sympy as sp
 from pint import Quantity
@@ -80,10 +89,34 @@ class Block:
     """Base class for notebook blocks."""
 
     raw: str
+    block_id: str = field(default_factory=lambda: uuid4().hex)
 
     def to_html(self) -> str:
         """Render the block as HTML (implemented by subclasses)."""
         raise NotImplementedError
+
+    def to_dict(self) -> dict:
+        """Serialize block metadata for persistence."""
+
+        return {"type": self.__class__.__name__, "raw": self.raw, "id": self.block_id}
+
+    @classmethod
+    def from_dict(cls, payload: dict) -> "Block":
+        """Recreate a block instance from serialized data."""
+
+        block_type = payload.get("type", "TextBlock")
+        common_kwargs = {"raw": payload.get("raw", ""), "block_id": payload.get("id", uuid4().hex)}
+        if block_type == "FormulaBlock":
+            return FormulaBlock(
+                **common_kwargs,
+                result=payload.get("result"),
+                latex=payload.get("latex"),
+                numeric_value=payload.get("numeric_value"),
+                is_assignment=payload.get("is_assignment", False),
+                variable_name=payload.get("variable_name"),
+                units=payload.get("units"),
+            )
+        return TextBlock(**common_kwargs)
 
 
 @dataclass
@@ -211,6 +244,20 @@ class FormulaBlock(Block):
         units_text = f"{compact.units:~P}".replace("\u00b7", "*").replace(" ", "")
         return float(compact.magnitude), units_text
 
+    def to_dict(self) -> dict:
+        base = super().to_dict()
+        base.update(
+            {
+                "result": self.result,
+                "latex": self.latex,
+                "numeric_value": self.numeric_value,
+                "is_assignment": self.is_assignment,
+                "variable_name": self.variable_name,
+                "units": self.units,
+            }
+        )
+        return base
+
     def evaluate(self, context: Optional[EvaluationContext] = None) -> None:
         """Parse and evaluate the expression using SymPy."""
 
@@ -322,6 +369,10 @@ class Document:
     """Ordered collection of blocks representing a notebook."""
 
     blocks: List[Block] = field(default_factory=list)
+    _undo_stack: list[list[Block]] = field(default_factory=list, init=False, repr=False)
+    _redo_stack: list[list[Block]] = field(default_factory=list, init=False, repr=False)
+
+    HISTORY_LIMIT = 20
 
     def evaluate(self) -> EvaluationContext:
         """Evaluate all formula blocks within a shared context."""
@@ -334,7 +385,10 @@ class Document:
 
     def add_block(self, block: Block) -> None:
         """Append a new block to the document."""
+
+        self._push_history()
         self.blocks.append(block)
+        self._redo_stack.clear()
 
     def to_html(self, renderer: Optional["NotebookRenderer"] = None) -> str:
         """Create an HTML preview using the provided renderer."""
@@ -349,3 +403,89 @@ class Document:
         from notebook.renderer import NotebookRenderer
 
         return NotebookRenderer()
+
+    # Editing helpers
+    def move_block(self, from_idx: int, to_idx: int) -> bool:
+        """Move a block to a new index while maintaining history."""
+
+        if not (0 <= from_idx < len(self.blocks)):
+            return False
+        to_idx = max(0, min(len(self.blocks) - 1, to_idx))
+        if from_idx == to_idx:
+            return False
+
+        self._push_history()
+        block = self.blocks.pop(from_idx)
+        self.blocks.insert(to_idx, block)
+        self._redo_stack.clear()
+        return True
+
+    def delete_block(self, index: int) -> bool:
+        """Remove a block at a given index with undo support."""
+
+        if not (0 <= index < len(self.blocks)):
+            return False
+        self._push_history()
+        del self.blocks[index]
+        self._redo_stack.clear()
+        return True
+
+    # History management
+    def _push_history(self) -> None:
+        snapshot = copy.deepcopy(self.blocks)
+        self._undo_stack.append(snapshot)
+        if len(self._undo_stack) > self.HISTORY_LIMIT:
+            self._undo_stack.pop(0)
+
+    def undo(self) -> bool:
+        if not self._undo_stack:
+            return False
+        self._redo_stack.append(copy.deepcopy(self.blocks))
+        self.blocks = self._undo_stack.pop()
+        return True
+
+    def redo(self) -> bool:
+        if not self._redo_stack:
+            return False
+        self._undo_stack.append(copy.deepcopy(self.blocks))
+        self.blocks = self._redo_stack.pop()
+        return True
+
+    # Persistence helpers
+    def to_dict(self) -> dict:
+        return {"version": 1, "blocks": [block.to_dict() for block in self.blocks]}
+
+    def save(self, path: str) -> None:
+        data = self.to_dict()
+        ext = os.path.splitext(path)[1].lower()
+        if ext in {".yaml", ".yml"}:
+            if yaml is None:
+                raise RuntimeError("PyYAML is required to save YAML notebooks.")
+            with open(path, "w", encoding="utf-8") as handle:
+                yaml.safe_dump(data, handle, allow_unicode=True)
+            return
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(data, handle, ensure_ascii=False, indent=2)
+
+    @classmethod
+    def from_dict(cls, payload: dict) -> "Document":
+        blocks_data = payload.get("blocks", [])
+        blocks: list[Block] = []
+        for entry in blocks_data:
+            blocks.append(Block.from_dict(entry))
+        document = cls(blocks=blocks)
+        document._undo_stack.clear()
+        document._redo_stack.clear()
+        return document
+
+    @classmethod
+    def load(cls, path: str) -> "Document":
+        ext = os.path.splitext(path)[1].lower()
+        with open(path, "r", encoding="utf-8") as handle:
+            if ext in {".yaml", ".yml"}:
+                if yaml is None:
+                    raise RuntimeError("PyYAML is required to load YAML notebooks.")
+                payload = yaml.safe_load(handle)
+            else:
+                payload = json.load(handle)
+        return cls.from_dict(payload)
