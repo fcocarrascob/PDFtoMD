@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import html
+from functools import cached_property
 from dataclasses import dataclass, field
 from typing import List, Optional, TYPE_CHECKING
 
@@ -90,8 +91,36 @@ class TextBlock(Block):
     """Text block that stores explanatory content."""
 
     def to_html(self) -> str:
-        safe_text = html.escape(self.raw)
-        return f"<p class='text-block'>{safe_text}</p>"
+        rendered = self._markdown.render(self.raw)
+        sanitized = html.escape(self.raw) if not rendered else self._sanitize(rendered)
+        return f"<div class='text-block'>{sanitized}</div>"
+
+    @cached_property
+    def _markdown(self):
+        from markdown_it import MarkdownIt
+
+        return MarkdownIt("commonmark", {"html": False, "linkify": True})
+
+    @staticmethod
+    def _sanitize(html_content: str) -> str:
+        import bleach
+
+        allowed_tags = set(bleach.sanitizer.ALLOWED_TAGS).union(
+            {"p", "pre", "code", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "strong", "em"}
+        )
+        allowed_attrs = {
+            **bleach.sanitizer.ALLOWED_ATTRIBUTES,
+            "a": ["href", "title", "rel"],
+            "code": ["class"],
+            "span": ["class"],
+        }
+        return bleach.clean(
+            html_content,
+            tags=allowed_tags,
+            attributes=allowed_attrs,
+            protocols=["http", "https", "mailto"],
+            strip=True,
+        )
 
 
 @dataclass
