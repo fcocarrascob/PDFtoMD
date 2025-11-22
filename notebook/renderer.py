@@ -25,10 +25,10 @@ class NotebookRenderer:
     def __init__(self, theme: NotebookTheme | None = None) -> None:
         self.theme = theme or NotebookTheme()
 
-    def render(self, document: Document) -> str:
+    def render(self, document: Document, options=None) -> str:
         """Return full HTML including MathJax and styling."""
 
-        context = document.evaluate()
+        context = document.evaluate(options=options)
         body = "\n".join(self._render_block(block) for block in document.blocks)
         if not body:
             body = "<p class='text-block'>No blocks yet.</p>"
