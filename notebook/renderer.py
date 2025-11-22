@@ -105,6 +105,23 @@ class NotebookRenderer:
         return f"""
             body {{ font-family: Arial, sans-serif; padding: 16px; background: {self.theme.background}; color: {self.theme.text}; }}
             .text-block {{ margin-bottom: 12px; line-height: 1.5; }}
+            .text-block h1, .text-block h2, .text-block h3, .text-block h4, .text-block h5, .text-block h6 {{
+                margin: 0 0 8px 0;
+                font-weight: 700;
+                color: {self.theme.accent};
+            }}
+            .text-block ul, .text-block ol {{
+                padding-left: 20px;
+                margin: 6px 0 12px 0;
+            }}
+            .text-block li {{ margin-bottom: 4px; }}
+            .text-block code {{
+                background: {self.theme.panel};
+                border: 1px solid {self.theme.border};
+                padding: 2px 4px;
+                border-radius: 4px;
+                font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            }}
             .formula-block {{ margin-bottom: 16px; padding: 12px; background: {self.theme.panel}; border-radius: 6px; border: 1px solid {self.theme.border}; }}
             .formula-input {{ font-size: 18px; margin-bottom: 6px; }}
             .formula-result {{ color: {self.theme.accent}; font-weight: bold; }}
