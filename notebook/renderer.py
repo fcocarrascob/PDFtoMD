@@ -34,8 +34,14 @@ class NotebookRenderer:
             body = "<p class='text-block'>No blocks yet.</p>"
 
         variable_table = self._render_variable_table(context.variables)
+        error_panel = self._render_error_panel(context.errors)
+        log_panel = self._render_log_panel(context.logs)
         if variable_table:
             body = f"{body}\n{variable_table}"
+        if error_panel:
+            body = f"{body}\n{error_panel}"
+        if log_panel:
+            body = f"{body}\n{log_panel}"
 
         return f"""
         <!DOCTYPE html>
@@ -59,6 +65,62 @@ class NotebookRenderer:
         if isinstance(block, (TextBlock, FormulaBlock)):
             return block.to_html()
         return ""
+
+    def _render_error_panel(self, errors) -> str:
+        """Render accumulated evaluation errors."""
+
+        if not errors:
+            return ""
+
+        items = []
+        for error in errors:
+            block_id = html.escape(error.get("block_id", ""))
+            message = html.escape(error.get("message", ""))
+            error_type = html.escape(error.get("type", "Error"))
+            items.append(f"<li><strong>{error_type}</strong> ({block_id}): {message}</li>")
+
+        return (
+            "<div class='error-panel'>"
+            "<h3>Errores de evaluación</h3>"
+            "<ul>"
+            + "".join(items)
+            + "</ul>"
+            "</div>"
+        )
+
+    def _render_log_panel(self, logs) -> str:
+        """Render a compact evaluation log to show timings and substitutions."""
+
+        if not logs:
+            return ""
+
+        rows = []
+        for entry in logs:
+            substitutions = ", ".join(entry.get("substitutions", [])) or "-"
+            units = html.escape(entry.get("units") or "")
+            rows.append(
+                "<tr>"
+                f"<td>{html.escape(entry.get('block_id', '')[:6])}</td>"
+                f"<td>{html.escape(entry.get('expression', ''))}</td>"
+                f"<td>{entry.get('duration_ms', 0):.2f} ms</td>"
+                f"<td>{units}</td>"
+                f"<td>{html.escape(substitutions)}</td>"
+                "</tr>"
+            )
+
+        return (
+            "<div class='log-panel'>"
+            "<h3>Registro de evaluación</h3>"
+            "<table>"
+            "<thead>"
+            "<tr><th>Bloque</th><th>Expresión</th><th>Tiempo</th><th>Unidades</th><th>Sustituciones</th></tr>"
+            "</thead>"
+            "<tbody>"
+            + "".join(rows)
+            + "</tbody>"
+            "</table>"
+            "</div>"
+        )
 
     def _render_variable_table(self, variables: Iterable[VariableRecord]) -> str:
         """Render a compact variable list below the document."""
@@ -123,11 +185,20 @@ class NotebookRenderer:
                 font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
             }}
             .formula-block {{ margin-bottom: 16px; padding: 12px; background: {self.theme.panel}; border-radius: 6px; border: 1px solid {self.theme.border}; }}
+            .formula-block.error {{ border-color: #d9534f; background: #3a1f1f; }}
             .formula-input {{ font-size: 18px; margin-bottom: 6px; }}
             .formula-result {{ color: {self.theme.accent}; font-weight: bold; }}
+            .formula-block.error .formula-result {{ color: #f7c6c5; }}
             .variable-table {{ margin-top: 24px; background: {self.theme.panel}; padding: 12px; border-radius: 6px; border: 1px solid {self.theme.border}; }}
             .variable-table h3 {{ margin-top: 0; }}
             .variable-table table {{ width: 100%; border-collapse: collapse; }}
             .variable-table th, .variable-table td {{ padding: 6px 8px; text-align: left; border-bottom: 1px solid {self.theme.border}; }}
             .variable-table th {{ color: {self.theme.text}; opacity: 0.8; }}
+            .error-panel, .log-panel {{ margin-top: 16px; background: {self.theme.panel}; padding: 12px; border-radius: 6px; border: 1px solid {self.theme.border}; }}
+            .error-panel h3, .log-panel h3 {{ margin-top: 0; color: #f7c6c5; }}
+            .error-panel ul {{ padding-left: 18px; margin: 8px 0; }}
+            .error-panel li {{ margin-bottom: 6px; }}
+            .log-panel table {{ width: 100%; border-collapse: collapse; }}
+            .log-panel th, .log-panel td {{ padding: 6px 8px; text-align: left; border-bottom: 1px solid {self.theme.border}; }}
+            .log-panel th {{ color: {self.theme.text}; opacity: 0.8; }}
         """

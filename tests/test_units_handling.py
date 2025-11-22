@@ -35,3 +35,22 @@ def test_formula_uses_previous_quantity_units() -> None:
     assert p_block.numeric_value == pytest.approx(12.0)
     assert p_block.units == "kN/m"
     assert "12.00 kN/m" in html
+
+
+def test_invalid_units_do_not_block_following_cells() -> None:
+    """A unit error should be surfaced but not prevent later evaluations."""
+
+    bad_block = FormulaBlock("X = 5 foobar")
+    good_block = FormulaBlock("Y = 2 + 2")
+
+    doc = Document([bad_block, good_block])
+    context = doc.evaluate()
+
+    assert bad_block.evaluation_status == "error"
+    assert good_block.numeric_value == 4
+    assert len(context.errors) == 1
+    assert any(var.name == "Y" and var.numeric_value == 4 for var in context.variables)
+
+    html = doc.to_html()
+    assert "Errores de evaluación" in html
+    assert "Registro de evaluación" in html
