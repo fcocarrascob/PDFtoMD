@@ -39,7 +39,7 @@ class NotebookRenderer:
         ``mathjax_url`` (defaulting to the CDN build).
         """
 
-        context = document.evaluate()
+        context = document.evaluate(options=options)
         body = "\n".join(self._render_block(block) for block in document.blocks)
         if not body:
             body = "<p class='text-block'>No blocks yet.</p>"
