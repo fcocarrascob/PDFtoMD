@@ -47,7 +47,7 @@ class VariableRecord:
 
     name: str
     expression: str
-    numeric_value: Optional[float] = None
+    numeric_value: Optional[float | str] = None
     units: Optional[str] = None
 
 
@@ -79,18 +79,35 @@ class EvaluationContext:
         """Add a variable evaluation record and persist its numeric value."""
 
         _ = self.symbols[name]
-        if numeric_value is not None:
-            self.numeric_values[name] = numeric_value
+        cleaned_numeric_value = self._coerce_numeric_value(numeric_value, units)
+        if isinstance(cleaned_numeric_value, (int, float)):
+            self.numeric_values[name] = float(cleaned_numeric_value)
         if quantity is not None:
             self.quantities[name] = quantity
         self.variables.append(
             VariableRecord(
                 name=name,
                 expression=expression,
-                numeric_value=numeric_value,
+                numeric_value=cleaned_numeric_value,
                 units=units,
             )
         )
+
+    @staticmethod
+    def _coerce_numeric_value(value, units: Optional[str]):
+        """Strip unit suffixes from numeric strings for clean storage."""
+
+        if isinstance(value, str):
+            cleaned = value.strip()
+            if units:
+                suffix = units.strip()
+                if cleaned.endswith(suffix):
+                    cleaned = cleaned[: -len(suffix)].rstrip()
+            try:
+                return float(cleaned)
+            except (TypeError, ValueError):
+                return value
+        return value
 
     def register_error(self, *, block_id: str, message: str, error_type: str) -> None:
         """Store evaluation errors so the renderer can surface them."""
@@ -255,7 +272,7 @@ class FormulaBlock(Block):
     error_message: Optional[str] = None
     evaluation_time_ms: Optional[float] = None
 
-    def _parse_assignment(self, rhs: str, context: EvaluationContext) -> tuple[sp.Expr, Optional[Quantity]]:
+    def _parse_assignment(self, rhs: str, context: EvaluationContext) -> tuple[sp.Expr, Optional[Quantity], Optional[str]]:
         """Parse the right-hand side of an assignment, capturing units when present."""
 
         rhs = rhs.strip()
@@ -269,17 +286,17 @@ class FormulaBlock(Block):
                     unit_registry = get_unit_registry()
                     units = " ".join(parts[1:])
                     quantity = value * unit_registry(units)
-                    return sp.Float(value), quantity
-                return sp.Float(value), None
+                    return sp.Float(value), quantity, units
+                return sp.Float(value), None, None
             except (ValueError, Exception):
                 pass
 
         # Fall back to generic SymPy parsing
         try:
-            return self._safe_sympify(rhs, context), None
+            return self._safe_sympify(rhs, context), None, None
         except Exception:
             # Defer to pint evaluation even if SymPy parsing fails (e.g., unknown units).
-            return None, None
+            return None, None, None
 
     @staticmethod
     def _safe_sympify(expression: str, context: EvaluationContext) -> sp.Expr:
@@ -366,7 +383,9 @@ class FormulaBlock(Block):
         return f"{value:.2f}"
 
     @staticmethod
-    def _format_quantity(quantity: Quantity, options: "NotebookOptions") -> tuple[float, str]:
+    def _format_quantity(
+        quantity: Quantity, options: "NotebookOptions", *, original_units: str | None = None
+    ) -> tuple[float, str]:
         """Normalize a quantity for display and numeric storage."""
 
         ureg = get_unit_registry()
@@ -392,7 +411,10 @@ class FormulaBlock(Block):
             except Exception:
                 pass
 
-        units_text = f"{quantity.units:~P}".replace("\u00b7", "*").replace(" ", "")
+        if not simplify_units and not target_unit and original_units:
+            units_text = original_units.strip()
+        else:
+            units_text = f"{quantity.units:~P}".replace("\u00b7", "*").replace(" ", "")
         return float(quantity.magnitude), units_text
 
     def _handle_unit_error(
@@ -462,12 +484,14 @@ class FormulaBlock(Block):
                 if lhs:
                     self.is_assignment = True
                     self.variable_name = lhs
-                    self.sympy_expr, quantity = self._parse_assignment(rhs, context)
+                    self.sympy_expr, quantity, unit_str = self._parse_assignment(rhs, context)
                     # First try with explicit quantity from parsing.
                     if quantity is not None:
                         self.quantity = quantity
                         try:
-                            magnitude, normalized_units = self._format_quantity(quantity, options)
+                            magnitude, normalized_units = self._format_quantity(
+                                quantity, options, original_units=unit_str
+                            )
                         except Exception as exc:
                             expr_latex = sp.latex(self.sympy_expr) if self.sympy_expr is not None else html.escape(rhs)
                             self._handle_unit_error(exc, context, expr_latex, lhs)

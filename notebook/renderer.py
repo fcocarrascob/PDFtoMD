@@ -140,7 +140,7 @@ class NotebookRenderer:
 
         rows = []
         for variable in variables:
-            value = self._format_value(variable.numeric_value)
+            value = self._format_value(variable.numeric_value, variable.units)
             rows.append(
                 "<tr>"
                 f"<td>{html.escape(variable.name)}</td>"
@@ -167,11 +167,21 @@ class NotebookRenderer:
         )
 
     @staticmethod
-    def _format_value(numeric_value) -> str:
+    def _format_value(numeric_value, units: str | None) -> str:
         """Format numeric values and leave unit display to the dedicated column."""
 
         if numeric_value is None:
             return ""
+
+        if isinstance(numeric_value, str):
+            cleaned = numeric_value.strip()
+            if units and cleaned.endswith(units):
+                cleaned = cleaned[: -len(units)].rstrip()
+            try:
+                numeric_value = float(cleaned)
+            except (TypeError, ValueError):
+                return cleaned
+
         return f"{float(numeric_value):.2f}"
 
     def _stylesheet(self) -> str:

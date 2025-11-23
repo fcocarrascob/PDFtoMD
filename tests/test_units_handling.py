@@ -3,6 +3,7 @@
 import pytest
 
 from notebook.document import Document, FormulaBlock
+from notebook.document import NotebookOptions
 
 
 def test_assignment_with_units_formats_quantity() -> None:
@@ -54,3 +55,23 @@ def test_invalid_units_do_not_block_following_cells() -> None:
     html = doc.to_html()
     assert "Errores de evaluación" in html
     assert "Registro de evaluación" in html
+
+
+def test_units_not_duplicated_in_variable_table_or_log() -> None:
+    """The unit should appear only once per value in tables and logs."""
+
+    block = FormulaBlock("M = 3 MPa·mm")
+    options = NotebookOptions(simplify_units=False)
+    doc = Document([block])
+
+    html = doc.to_html(options=options)
+
+    # Result should keep the original unit string when compaction is disabled.
+    assert "3.00 MPa·mm" in html
+
+    # Variable table should show numeric value without appending the unit again.
+    assert "<td>3.00 MPa·mm</td>" not in html
+    assert "<td>3.00</td><td>MPa·mm</td>" in html.replace("\n", "")
+
+    # Evaluation log should list the unit only once per entry.
+    assert "<td>MPa·mm</td>" in html
