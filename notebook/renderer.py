@@ -12,11 +12,11 @@ from notebook.document import Document, FormulaBlock, TextBlock, VariableRecord
 class NotebookTheme:
     """Simple theme holder to keep colors centralized."""
 
-    background: str = "#1f1f1f"
-    text: str = "#f0f0f0"
-    panel: str = "#2a2a2a"
-    accent: str = "#8bd450"
-    border: str = "#3a3a3a"
+    background: str = "#f7f8fa"
+    text: str = "#1f1f1f"
+    panel: str = "#ffffff"
+    accent: str = "#2a82da"
+    border: str = "#dbe1ea"
 
 
 class NotebookRenderer:
@@ -47,7 +47,8 @@ class NotebookRenderer:
 
         variable_table = self._render_variable_table(context.variables)
         error_panel = self._render_error_panel(context.errors)
-        log_panel = self._render_log_panel(context.logs)
+        hide_logs = bool(getattr(options, "hide_logs", False)) if options is not None else False
+        log_panel = "" if hide_logs else self._render_log_panel(context.logs)
         if variable_table:
             body = f"{body}\n{variable_table}"
         if error_panel:
@@ -67,7 +68,9 @@ class NotebookRenderer:
             </style>
         </head>
         <body>
-            {body}
+            <div class='page'>
+                {body}
+            </div>
         </body>
         </html>
         """
@@ -178,7 +181,30 @@ class NotebookRenderer:
         """Return CSS for the preview."""
 
         return f"""
-            body {{ font-family: Arial, sans-serif; padding: 16px; background: {self.theme.background}; color: {self.theme.text}; }}
+            @page {{
+                size: A4;
+                margin: 12mm;
+            }}
+            body {{
+                font-family: Arial, sans-serif;
+                padding: 24px;
+                background: #eceff4;
+                color: {self.theme.text};
+                display: flex;
+                justify-content: center;
+            }}
+            .page {{
+                background: {self.theme.background};
+                color: {self.theme.text};
+                max-width: 210mm;
+                min-height: 297mm;
+                width: 100%;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+                border: 1px solid #e5e8ee;
+                border-radius: 6px;
+                padding: 24px;
+                box-sizing: border-box;
+            }}
             .text-block {{ margin-bottom: 12px; line-height: 1.5; }}
             .text-block h1, .text-block h2, .text-block h3, .text-block h4, .text-block h5, .text-block h6 {{
                 margin: 0 0 8px 0;
@@ -198,17 +224,18 @@ class NotebookRenderer:
                 font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
             }}
             .formula-block {{ margin-bottom: 16px; padding: 12px; background: {self.theme.panel}; border-radius: 6px; border: 1px solid {self.theme.border}; }}
-            .formula-block.error {{ border-color: #d9534f; background: #3a1f1f; }}
+            .formula-block.error {{ border-color: #d9534f; background: #fdecea; }}
             .formula-input {{ font-size: 18px; margin-bottom: 6px; }}
             .formula-result {{ color: {self.theme.accent}; font-weight: bold; }}
-            .formula-block.error .formula-result {{ color: #f7c6c5; }}
+            .formula-block.error .formula-result {{ color: #d9534f; }}
             .variable-table {{ margin-top: 24px; background: {self.theme.panel}; padding: 12px; border-radius: 6px; border: 1px solid {self.theme.border}; }}
             .variable-table h3 {{ margin-top: 0; }}
             .variable-table table {{ width: 100%; border-collapse: collapse; }}
             .variable-table th, .variable-table td {{ padding: 6px 8px; text-align: left; border-bottom: 1px solid {self.theme.border}; }}
             .variable-table th {{ color: {self.theme.text}; opacity: 0.8; }}
             .error-panel, .log-panel {{ margin-top: 16px; background: {self.theme.panel}; padding: 12px; border-radius: 6px; border: 1px solid {self.theme.border}; }}
-            .error-panel h3, .log-panel h3 {{ margin-top: 0; color: #f7c6c5; }}
+            .error-panel h3 {{ margin-top: 0; color: #d9534f; }}
+            .log-panel h3 {{ margin-top: 0; color: {self.theme.accent}; }}
             .error-panel ul {{ padding-left: 18px; margin: 8px 0; }}
             .error-panel li {{ margin-bottom: 6px; }}
             .log-panel table {{ width: 100%; border-collapse: collapse; }}
@@ -220,15 +247,29 @@ class NotebookRenderer:
     def _mathjax_script(mathjax_path: str | None, mathjax_url: str | None) -> str:
         """Return the MathJax loader script, embedding when a local path is given."""
 
+        config = """
+        <script>
+        window.MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\\\(', '\\\\)']],
+            displayMath: [['$$','$$'], ['\\\\[','\\\\]']]
+          },
+          options: {
+            skipHtmlTags: ['script','noscript','style','textarea','pre','code']
+          }
+        };
+        </script>
+        """
+
         if mathjax_path:
             try:
                 with open(mathjax_path, "r", encoding="utf-8") as handle:
                     content = handle.read()
-                return f"<script>{content}</script>"
+                return f"{config}<script>{content}</script>"
             except OSError:
                 # Fall back to external URL if the path cannot be read.
                 pass
 
         if mathjax_url:
-            return f"<script src=\"{html.escape(mathjax_url)}\"></script>"
-        return ""
+            return f"{config}<script src=\"{html.escape(mathjax_url)}\"></script>"
+        return config

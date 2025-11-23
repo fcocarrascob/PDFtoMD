@@ -55,8 +55,16 @@ COMMON_UNITS: list[str] = build_common_units()
 def math_env() -> dict[str, object]:
     """Safe math helpers exposed to expression evaluation."""
 
+    def _sqrt(value):
+        """Pint-friendly sqrt: uses exponent for quantities, falls back to math.sqrt."""
+
+        try:
+            return value ** 0.5
+        except Exception:
+            return math.sqrt(value)
+
     return {
-        "sqrt": math.sqrt,
+        "sqrt": _sqrt,
         "sin": math.sin,
         "cos": math.cos,
         "tan": math.tan,

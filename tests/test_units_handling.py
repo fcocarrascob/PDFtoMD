@@ -22,6 +22,17 @@ def test_assignment_with_units_formats_quantity() -> None:
     assert "kN*m" in html
 
 
+def test_assignment_latex_does_not_duplicate_units() -> None:
+    """If the expression already shows units, avoid appending them again in LaTeX."""
+
+    block = FormulaBlock("E_c = 4700*sqrt(30)*MPa")
+    block.evaluate()
+
+    assert "MPa" in block.latex
+    assert block.latex.count("MPa") == 1
+    assert r"\;" not in block.latex
+
+
 def test_formula_uses_previous_quantity_units() -> None:
     """Expressions that combine quantities should propagate and format units."""
 
