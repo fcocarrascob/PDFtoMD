@@ -19,8 +19,13 @@ except Exception:  # pragma: no cover - optional dependency
 
 import sympy as sp
 from pint import Quantity
+from sympy.parsing.sympy_parser import (
+    parse_expr,
+    standard_transformations,
+    implicit_multiplication_application,
+)
 
-from notebook.units import get_unit_registry, math_env
+from notebook.units import COMMON_UNITS, get_unit_registry, math_env
 
 if TYPE_CHECKING:  # Avoid runtime import cycles with the renderer
     from notebook.renderer import NotebookRenderer
@@ -62,14 +67,6 @@ class EvaluationContext:
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
         return False
-
-
-@dataclass
-class NotebookOptions:
-    """User-tunable settings that influence evaluation and formatting."""
-
-    target_unit: str | None = None
-    simplify_units: bool = True
 
     def register_variable(
         self,
@@ -120,6 +117,14 @@ class NotebookOptions:
                 "substitutions": substitutions,
             }
         )
+
+
+@dataclass
+class NotebookOptions:
+    """User-tunable settings that influence evaluation and formatting."""
+
+    target_unit: str | None = None
+    simplify_units: bool = True
 
 
 @dataclass
@@ -270,15 +275,57 @@ class FormulaBlock(Block):
                 pass
 
         # Fall back to generic SymPy parsing
-        return self._safe_sympify(rhs, context), None
+        try:
+            return self._safe_sympify(rhs, context), None
+        except Exception:
+            # Defer to pint evaluation even if SymPy parsing fails (e.g., unknown units).
+            return None, None
 
     @staticmethod
     def _safe_sympify(expression: str, context: EvaluationContext) -> sp.Expr:
         """Sympify while avoiding accidental symbol injection for numeric-only inputs."""
 
+        expr = FormulaBlock._normalize_expression(expression)
         if re.search(r"[A-Za-z]", expression):
-            return sp.sympify(expression, locals=context.symbols)
-        return sp.sympify(expression)
+            # Prefer SymPy math helpers so names like ``sqrt`` resolve to functions,
+            # while still letting the SymbolRegistry lazily create new symbols.
+            safe_locals = {
+                "sqrt": sp.sqrt,
+                "sin": sp.sin,
+                "cos": sp.cos,
+                "tan": sp.tan,
+                "log": sp.log,
+                "exp": sp.exp,
+                "pi": sp.pi,
+                "E": sp.E,
+                "Integer": sp.Integer,
+                "Rational": sp.Rational,
+                "Symbol": sp.Symbol,
+            }
+            for name, obj in safe_locals.items():
+                context.symbols.setdefault(name, obj)
+            # Also inject unit symbols so `1 MPa` or `1MPa` parses without errors.
+            for unit_name in COMMON_UNITS:
+                context.symbols.setdefault(unit_name, sp.Symbol(unit_name))
+            return parse_expr(
+                expr,
+                local_dict=context.symbols,
+                transformations=standard_transformations + (implicit_multiplication_application,),
+            )
+        return parse_expr(
+            expr,
+            transformations=standard_transformations + (implicit_multiplication_application,),
+        )
+
+    @staticmethod
+    def _normalize_expression(expression: str) -> str:
+        """Insert explicit multiplication between digits/closing parens and symbols/funcs."""
+
+        # Turn "1MPa" or "3sqrt(3)" into "1*MPa" / "3*sqrt(3)"
+        expr = re.sub(r"(?<=\d)(?=[A-Za-z\(])", "*", expression)
+        # Turn ")(" into ")*(" for implicit multiplication of parenthesized factors.
+        expr = expr.replace(")(", ")*(")
+        return expr
 
     def _evaluate_with_pint(self, expression: str, context: EvaluationContext):
         """Try to evaluate the expression using pint quantities when available."""
@@ -287,12 +334,18 @@ class FormulaBlock(Block):
         env = {"ureg": ureg}
         env.update(math_env())
         env.update(context.quantities)
+        # Expose common units directly (e.g., "mm" or "kPa") to keep expressions succinct.
+        for unit_name in COMMON_UNITS:
+            try:
+                env.setdefault(unit_name, getattr(ureg, unit_name))
+            except Exception:
+                pass
         # Fallback to numeric-only substitutions for symbols without units.
         for name, value in context.numeric_values.items():
             env.setdefault(name, value)
 
         # Normalize caret to python exponent for eval friendliness.
-        expr = expression.replace("^", "**")
+        expr = self._normalize_expression(expression).replace("^", "**")
         try:
             return eval(expr, {"__builtins__": {}}, env), None  # pylint: disable=eval-used
         except Exception as exc:
@@ -580,11 +633,17 @@ class Document:
         *,
         mathjax_path: str | None = None,
         mathjax_url: str | None = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js",
+        options: Optional[NotebookOptions] = None,
     ) -> str:
         """Create an HTML preview using the provided renderer."""
 
         renderer = renderer or self._default_renderer()
-        return renderer.render(self, mathjax_path=mathjax_path, mathjax_url=mathjax_url)
+        return renderer.render(
+            self,
+            mathjax_path=mathjax_path,
+            mathjax_url=mathjax_url,
+            options=options,
+        )
 
     def save_html(
         self,
@@ -593,11 +652,15 @@ class Document:
         *,
         mathjax_path: str | None = None,
         mathjax_url: str | None = None,
+        options: Optional[NotebookOptions] = None,
     ) -> None:
         """Render the document to HTML and persist it to disk."""
 
         html_content = self.to_html(
-            renderer=renderer, mathjax_path=mathjax_path, mathjax_url=mathjax_url
+            renderer=renderer,
+            mathjax_path=mathjax_path,
+            mathjax_url=mathjax_url,
+            options=options,
         )
         with open(path, "w", encoding="utf-8") as handle:
             handle.write(html_content)
@@ -676,7 +739,9 @@ class Document:
 
     # History management
     def _push_history(self) -> None:
-        snapshot = copy.deepcopy(self.blocks)
+        # Create a lightweight snapshot via serialization to avoid deepcopy issues
+        # with objects that hold unpicklable state (e.g., cached Markdown parsers).
+        snapshot = [Block.from_dict(block.to_dict()) for block in self.blocks]
         self._undo_stack.append(snapshot)
         if len(self._undo_stack) > self.HISTORY_LIMIT:
             self._undo_stack.pop(0)
@@ -684,14 +749,14 @@ class Document:
     def undo(self) -> bool:
         if not self._undo_stack:
             return False
-        self._redo_stack.append(copy.deepcopy(self.blocks))
+        self._redo_stack.append([Block.from_dict(block.to_dict()) for block in self.blocks])
         self.blocks = self._undo_stack.pop()
         return True
 
     def redo(self) -> bool:
         if not self._redo_stack:
             return False
-        self._undo_stack.append(copy.deepcopy(self.blocks))
+        self._undo_stack.append([Block.from_dict(block.to_dict()) for block in self.blocks])
         self.blocks = self._redo_stack.pop()
         return True
 
