@@ -681,7 +681,7 @@ class Document:
         renderer: Optional["NotebookRenderer"] = None,
         *,
         mathjax_path: str | None = None,
-        mathjax_url: str | None = None,
+        mathjax_url: str | None = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js",
         options: Optional[NotebookOptions] = None,
     ) -> None:
         """Render the document to HTML and persist it to disk."""
