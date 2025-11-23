@@ -124,6 +124,7 @@ class NotebookOptions:
 
     target_unit: str | None = None
     simplify_units: bool = True
+    hide_logs: bool = False
 
 
 @dataclass

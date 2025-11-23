@@ -1,6 +1,7 @@
 """Notebook tab with SymPy-powered formula preview."""
 from __future__ import annotations
 
+import os
 import re
 
 from PySide6.QtCore import Qt, QSettings, QTimer
@@ -408,8 +409,12 @@ class NotebookTab(QWidget):
 
     def update_preview(self) -> None:
         """Render the document into the web view with MathJax."""
+        mathjax_path, mathjax_url = self._mathjax_args(for_export=False)
         html_content = self.document.to_html(
-            renderer=self.renderer, options=self._evaluation_options()
+            renderer=self.renderer,
+            mathjax_path=mathjax_path,
+            mathjax_url=mathjax_url,
+            options=self._evaluation_options(hide_logs=False),
         )
         self.preview.setHtml(html_content)
 
@@ -422,21 +427,23 @@ class NotebookTab(QWidget):
         if not path:
             return
 
-        mathjax_path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Optional MathJax bundle (leave empty to use CDN)",
-            "",
-            "JavaScript Files (*.js);;All Files (*)",
-        )
-        if not mathjax_path:
+        mathjax_path, mathjax_url = self._mathjax_args(for_export=True)
+        if mathjax_path == "__missing_local__":
+            QMessageBox.warning(
+                self,
+                "MathJax bundle not found",
+                "Local MathJax bundle not found. Falling back to CDN.",
+            )
             mathjax_path = None
+            mathjax_url = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
 
         try:
             self.document.save_html(
                 path,
                 renderer=self.renderer,
                 mathjax_path=mathjax_path,
-                options=self._evaluation_options(),
+                mathjax_url=mathjax_url,
+                options=self._evaluation_options(hide_logs=self._hide_logs_pref()),
             )
             QMessageBox.information(self, "Export complete", f"Saved HTML to {path}")
         except Exception as exc:  # pylint: disable=broad-except
@@ -635,8 +642,28 @@ class NotebookTab(QWidget):
         self.settings.setValue("notebook/simplify_units", checked)
         self.update_preview()
 
-    def _evaluation_options(self) -> NotebookOptions:
+    def _hide_logs_pref(self) -> bool:
+        stored = self.settings.value("render/hide_logs", False)
+        if isinstance(stored, str):
+            return stored.lower() in {"1", "true", "yes"}
+        return bool(stored)
+
+    def _mathjax_args(self, for_export: bool = False) -> tuple[str | None, str | None]:
+        default_cdn = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+        mode = str(self.settings.value("render/mathjax_mode", "cdn") or "cdn")
+        path = str(self.settings.value("render/mathjax_path", "") or "")
+        if mode == "local":
+            if path and os.path.exists(path):
+                return path, None
+            # Signal missing bundle for export so we can notify, silently fall back for preview
+            if for_export:
+                return "__missing_local__", None
+            return None, default_cdn
+        return None, default_cdn
+
+    def _evaluation_options(self, hide_logs: bool = False) -> NotebookOptions:
         return NotebookOptions(
             target_unit=self._current_target_unit(),
             simplify_units=self.simplify_checkbox.isChecked(),
+            hide_logs=hide_logs,
         )

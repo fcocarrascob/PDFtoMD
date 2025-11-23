@@ -8,6 +8,8 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMenuBar,
+    QRadioButton,
     QMainWindow,
     QMessageBox,
     QProgressBar,
@@ -18,7 +20,7 @@ from PySide6.QtWidgets import (
     QInputDialog,
 )
 from PySide6.QtCore import Qt, QThread, Signal, QSettings
-from PySide6.QtGui import QDragEnterEvent, QDropEvent
+from PySide6.QtGui import QDragEnterEvent, QDropEvent, QAction, QKeySequence
 from converter.engine import PDFConverter
 import os
 
@@ -32,6 +34,7 @@ class SettingsDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Settings")
+        self.settings = getattr(parent, "settings", QSettings("MyCompany", "PDFtoMD"))
 
         layout = QVBoxLayout(self)
 
@@ -45,6 +48,27 @@ class SettingsDialog(QDialog):
         layout.addWidget(QLabel("Model"))
         layout.addWidget(self.model_combo)
 
+        layout.addWidget(QLabel("MathJax source (for preview/export)"))
+        mathjax_row = QHBoxLayout()
+        self.mathjax_cdn_radio = QRadioButton("Use CDN (online)")
+        self.mathjax_local_radio = QRadioButton("Use local bundle")
+        mathjax_row.addWidget(self.mathjax_cdn_radio)
+        mathjax_row.addWidget(self.mathjax_local_radio)
+        layout.addLayout(mathjax_row)
+
+        path_row = QHBoxLayout()
+        self.mathjax_path_input = QLineEdit()
+        browse_btn = QPushButton("Browse")
+        browse_btn.clicked.connect(self._browse_mathjax_bundle)
+        path_row.addWidget(self.mathjax_path_input, 1)
+        path_row.addWidget(browse_btn)
+        layout.addLayout(path_row)
+
+        self.hide_logs_checkbox = QCheckBox("Hide log panel in exports")
+        layout.addWidget(self.hide_logs_checkbox)
+
+        self._load_render_settings()
+
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
@@ -55,6 +79,46 @@ class SettingsDialog(QDialog):
 
     def get_model(self):
         return self.model_combo.currentText()
+
+    def get_mathjax_mode(self):
+        return "local" if self.mathjax_local_radio.isChecked() else "cdn"
+
+    def get_mathjax_path(self):
+        return self.mathjax_path_input.text().strip()
+
+    def get_hide_logs(self):
+        return self.hide_logs_checkbox.isChecked()
+
+    def _load_render_settings(self):
+        mode = self.settings.value("render/mathjax_mode", "cdn")
+        path = self.settings.value("render/mathjax_path", "")
+        hide_logs = self.settings.value("render/hide_logs", False)
+
+        self.mathjax_cdn_radio.setChecked(mode != "local")
+        self.mathjax_local_radio.setChecked(mode == "local")
+        self.mathjax_path_input.setText(path)
+        if isinstance(hide_logs, str):
+            hide_logs = hide_logs.lower() in {"1", "true", "yes"}
+        self.hide_logs_checkbox.setChecked(bool(hide_logs))
+        self._update_mathjax_controls()
+
+        self.mathjax_cdn_radio.toggled.connect(self._update_mathjax_controls)
+        self.mathjax_local_radio.toggled.connect(self._update_mathjax_controls)
+
+    def _update_mathjax_controls(self):
+        use_local = self.mathjax_local_radio.isChecked()
+        self.mathjax_path_input.setEnabled(use_local)
+
+    def _browse_mathjax_bundle(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select MathJax bundle (mathjax.js)",
+            "",
+            "JavaScript Files (*.js);;All Files (*)",
+        )
+        if path:
+            self.mathjax_path_input.setText(path)
+            self.mathjax_local_radio.setChecked(True)
 
 class ConversionWorker(QThread):
     finished = Signal(str)
@@ -93,14 +157,21 @@ class MainWindow(QMainWindow):
         self.tab_widget = QTabWidget()
         self.setCentralWidget(self.tab_widget)
 
+        self._build_menu_bar()
+
+        # Tabs: Notebook first (default), then PDF to Markdown
+        self.notebook_tab = NotebookTab(self)
+        self.tab_widget.addTab(self.notebook_tab, "Calculation Notebook")
+
         self.pdf_tab = QWidget()
         self.tab_widget.addTab(self.pdf_tab, "PDF to Markdown")
+        self.tab_widget.setCurrentIndex(0)
 
         self.pdf_layout = QVBoxLayout(self.pdf_tab)
         self.pdf_layout.setSpacing(20)
         self.pdf_layout.setContentsMargins(40, 40, 40, 40)
 
-        # Top Bar (Settings & Split)
+        # Top Bar (Split only; settings moved to menu)
         top_layout = QHBoxLayout()
 
         self.split_btn = QPushButton("Split PDF")
@@ -108,10 +179,6 @@ class MainWindow(QMainWindow):
         top_layout.addWidget(self.split_btn)
 
         top_layout.addStretch()
-
-        self.settings_btn = QPushButton("Settings")
-        self.settings_btn.clicked.connect(self.open_settings)
-        top_layout.addWidget(self.settings_btn)
 
         self.pdf_layout.addLayout(top_layout)
 
@@ -193,9 +260,26 @@ class MainWindow(QMainWindow):
         # Enable drag and drop
         self.setAcceptDrops(True)
 
-        # Calculation Notebook tab
-        self.notebook_tab = NotebookTab(self)
-        self.tab_widget.addTab(self.notebook_tab, "Calculation Notebook")
+    def _build_menu_bar(self):
+        menu_bar = QMenuBar(self)
+        self.setMenuBar(menu_bar)
+
+        file_menu = menu_bar.addMenu("&File")
+        exit_action = QAction("Exit", self)
+        exit_action.setShortcut(QKeySequence.StandardKey.Quit)
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
+
+        settings_menu = menu_bar.addMenu("&Settings")
+        preferences_action = QAction("Preferences...", self)
+        preferences_action.setShortcut(QKeySequence("Ctrl+,"))
+        preferences_action.triggered.connect(self.open_settings)
+        settings_menu.addAction(preferences_action)
+
+        help_menu = menu_bar.addMenu("&Help")
+        about_action = QAction("About", self)
+        about_action.triggered.connect(lambda: QMessageBox.information(self, "About", "PDF to Markdown Converter + Notebook"))
+        help_menu.addAction(about_action)
 
     def open_settings(self):
         dialog = SettingsDialog(self)
@@ -205,6 +289,9 @@ class MainWindow(QMainWindow):
         if dialog.exec():
             new_key = dialog.get_api_key()
             new_model = dialog.get_model()
+            new_mathjax_mode = dialog.get_mathjax_mode()
+            new_mathjax_path = dialog.get_mathjax_path()
+            new_hide_logs = dialog.get_hide_logs()
             
             changes = False
             if new_key != self.api_key:
@@ -215,6 +302,23 @@ class MainWindow(QMainWindow):
             if new_model != self.ai_model:
                 self.ai_model = new_model
                 self.settings.setValue("openai_model", self.ai_model)
+                changes = True
+
+            prev_mode = self.settings.value("render/mathjax_mode", "cdn")
+            prev_path = self.settings.value("render/mathjax_path", "")
+            prev_hide_logs = self.settings.value("render/hide_logs", False)
+            prev_hide_logs_bool = (
+                prev_hide_logs.lower() in {"1", "true", "yes"} if isinstance(prev_hide_logs, str) else bool(prev_hide_logs)
+            )
+
+            if new_mathjax_mode != prev_mode:
+                self.settings.setValue("render/mathjax_mode", new_mathjax_mode)
+                changes = True
+            if new_mathjax_path != prev_path:
+                self.settings.setValue("render/mathjax_path", new_mathjax_path)
+                changes = True
+            if bool(new_hide_logs) != prev_hide_logs_bool:
+                self.settings.setValue("render/hide_logs", bool(new_hide_logs))
                 changes = True
                 
             if changes:

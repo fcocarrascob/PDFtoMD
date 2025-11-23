@@ -47,7 +47,8 @@ class NotebookRenderer:
 
         variable_table = self._render_variable_table(context.variables)
         error_panel = self._render_error_panel(context.errors)
-        log_panel = self._render_log_panel(context.logs)
+        hide_logs = bool(getattr(options, "hide_logs", False)) if options is not None else False
+        log_panel = "" if hide_logs else self._render_log_panel(context.logs)
         if variable_table:
             body = f"{body}\n{variable_table}"
         if error_panel:
