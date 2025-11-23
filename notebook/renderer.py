@@ -246,15 +246,29 @@ class NotebookRenderer:
     def _mathjax_script(mathjax_path: str | None, mathjax_url: str | None) -> str:
         """Return the MathJax loader script, embedding when a local path is given."""
 
+        config = """
+        <script>
+        window.MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\\\(', '\\\\)']],
+            displayMath: [['$$','$$'], ['\\\\[','\\\\]']]
+          },
+          options: {
+            skipHtmlTags: ['script','noscript','style','textarea','pre','code']
+          }
+        };
+        </script>
+        """
+
         if mathjax_path:
             try:
                 with open(mathjax_path, "r", encoding="utf-8") as handle:
                     content = handle.read()
-                return f"<script>{content}</script>"
+                return f"{config}<script>{content}</script>"
             except OSError:
                 # Fall back to external URL if the path cannot be read.
                 pass
 
         if mathjax_url:
-            return f"<script src=\"{html.escape(mathjax_url)}\"></script>"
-        return ""
+            return f"{config}<script src=\"{html.escape(mathjax_url)}\"></script>"
+        return config

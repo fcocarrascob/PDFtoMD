@@ -474,6 +474,8 @@ class NotebookTab(QWidget):
             ("\u00f7", " / "),
             ("^", " ** "),
             ("\u221a", "sqrt()"),
+            ("\u00b7", " \u22c5 "),  # middle dot for multiplication
+            ("\u2248", " \u2248 "),
         ]
         for label, snippet in ops:
             btn = QToolButton()
@@ -481,6 +483,35 @@ class NotebookTab(QWidget):
             btn.setToolTip(f"Insert {label}")
             btn.clicked.connect(lambda _=False, s=snippet: self.insert_snippet(s))
             layout.addWidget(btn)
+
+        # Quick LaTeX snippets for text/fmla blocks
+        latex_snippets = [
+            ("Inline $", "$·$"),
+            ("Frac", "\\frac{·}{·}"),
+            ("Sqrt", "\\sqrt{·}"),
+            ("Sub", "x_{·}"),
+            ("Sup", "x^{·}"),
+        ]
+        for label, snippet in latex_snippets:
+            btn = QToolButton()
+            btn.setText(label)
+            btn.setToolTip(f"Insert {snippet}")
+            btn.clicked.connect(lambda _=False, s=snippet: self.insert_snippet(s))
+            layout.addWidget(btn)
+
+        # Greek symbols quick pick
+        self.greek_combo = QComboBox()
+        greek_items = ["\\alpha", "\\beta", "\\gamma", "\\delta", "\\phi", "\\theta", "\\lambda", "\\pi", "\\sigma", "\\omega"]
+        self.greek_combo.addItems(greek_items)
+        self.greek_combo.setToolTip("Insert Greek symbol (LaTeX)")
+
+        greek_btn = QToolButton()
+        greek_btn.setText("Greek")
+        greek_btn.setToolTip("Insert selected Greek symbol")
+        greek_btn.clicked.connect(lambda: self.insert_snippet(self.greek_combo.currentText()))
+
+        layout.addWidget(self.greek_combo)
+        layout.addWidget(greek_btn)
 
         self.unit_combo = QComboBox()
         self.unit_combo.setEditable(True)

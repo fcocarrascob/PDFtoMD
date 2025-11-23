@@ -3,7 +3,19 @@
         <html>
         <head>
             <meta charset='utf-8'>
-            <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+            
+        <script>
+        window.MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$','$$'], ['\\[','\\]']]
+          },
+          options: {
+            skipHtmlTags: ['script','noscript','style','textarea','pre','code']
+          }
+        };
+        </script>
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
             <style>
                 
             @page {
@@ -71,7 +83,7 @@
         </head>
         <body>
             <div class='page'>
-                <div class='text-block'><h1>Variables de entrada</h1></div>
+                <div class='text-block'><h1>Variables de entrada</h1><p>Este bloque tiene $x_{3}$ $\frac{3}{2}$ $x^{3}$</p><p>$\alpha$</p><p>$\gamma$</p><p>$\theta$ mm MPa</p></div>
 <div class='formula-block'><div class='formula-input'>$$ fc = 30.0\;MPa $$</div><div class='formula-result'>= 30.00 MPa</div></div>
 <div class='formula-block'><div class='formula-input'>$$ fy = 420.0\;MPa $$</div><div class='formula-result'>= 420.00 MPa</div></div>
 <div class='formula-block'><div class='formula-input'>$$ b = 300.0\;mm $$</div><div class='formula-result'>= 300.00 mm</div></div>
@@ -87,7 +99,7 @@
 <div class='formula-block'><div class='formula-input'>$$ R = \frac{d - \sqrt{d^{2} - 4 Mn k}}{2 k}\;MPa*mm² $$</div><div class='formula-result'>= 532670.80 MPa*mm²</div></div>
 <div class='formula-block'><div class='formula-input'>$$ As = \frac{R}{fy}\;mm² $$</div><div class='formula-result'>= 1268.26 mm²</div></div>
 <div class='variable-table'><h3>Variables</h3><table><thead><tr><th>Name</th><th>Expression</th><th>Value</th><th>Units</th></tr></thead><tbody><tr><td>fc</td><td>$$ 30.0 $$</td><td>30.00</td><td>MPa</td></tr><tr><td>fy</td><td>$$ 420.0 $$</td><td>420.00</td><td>MPa</td></tr><tr><td>b</td><td>$$ 300.0 $$</td><td>300.00</td><td>mm</td></tr><tr><td>h</td><td>$$ 500.0 $$</td><td>500.00</td><td>mm</td></tr><tr><td>cobertura</td><td>$$ 40.0 $$</td><td>40.00</td><td>mm</td></tr><tr><td>diametro_barra</td><td>$$ 16.0 $$</td><td>16.00</td><td>mm</td></tr><tr><td>phi</td><td>$$ 0.9 $$</td><td>0.90</td><td></td></tr><tr><td>Mu</td><td>$$ 200000000.0 $$</td><td>200000000.00</td><td>mm*N</td></tr><tr><td>d</td><td>$$ h - cobertura - \frac{diametro_{barra}}{2} $$</td><td>452.00</td><td>mm</td></tr><tr><td>k</td><td>$$ 1 / (2 * 0.85 * fc * b) $$</td><td>0.00</td><td>1/MPa/mm</td></tr><tr><td>Mn</td><td>$$ \frac{\mathrm{M}}{\phi} $$</td><td>222222222.22</td><td>mm*N</td></tr><tr><td>R</td><td>$$ \frac{d - \sqrt{d^{2} - 4 Mn k}}{2 k} $$</td><td>532670.80</td><td>MPa*mm²</td></tr><tr><td>As</td><td>$$ \frac{R}{fy} $$</td><td>1268.26</td><td>mm²</td></tr></tbody></table></div>
-<div class='log-panel'><h3>Registro de evaluación</h3><table><thead><tr><th>Bloque</th><th>Expresión</th><th>Tiempo</th><th>Unidades</th><th>Sustituciones</th></tr></thead><tbody><tr><td>e3b0d1</td><td>fc = 30 MPa</td><td>0.35 ms</td><td>MPa</td><td>-</td></tr><tr><td>cd9c9e</td><td>fy = 420 MPa</td><td>0.15 ms</td><td>MPa</td><td>-</td></tr><tr><td>5074a7</td><td>b = 300 mm</td><td>0.13 ms</td><td>mm</td><td>-</td></tr><tr><td>ef78d3</td><td>h = 500 mm</td><td>0.12 ms</td><td>mm</td><td>-</td></tr><tr><td>c8663d</td><td>cobertura = 40 mm</td><td>0.13 ms</td><td>mm</td><td>-</td></tr><tr><td>9a19cf</td><td>diametro_barra = 16 mm</td><td>0.12 ms</td><td>mm</td><td>-</td></tr><tr><td>ae291b</td><td>phi = 0.90</td><td>0.75 ms</td><td></td><td>-</td></tr><tr><td>8dd01c</td><td>Mu = 200e6 N*mm</td><td>0.19 ms</td><td>mm*N</td><td>-</td></tr><tr><td>8b4519</td><td>d = h - cobertura - diametro_barra/2</td><td>0.86 ms</td><td>mm</td><td>cobertura=40.00, diametro_barra=16.00, h=500.00</td></tr><tr><td>9f745d</td><td>k = 1 / (2 * 0.85 * fc * b)</td><td>0.71 ms</td><td>1/MPa/mm</td><td>-</td></tr><tr><td>4fadcf</td><td>Mn = Mu / phi</td><td>0.59 ms</td><td>mm*N</td><td>Mu=200000000.00, phi=0.90</td></tr><tr><td>ec9e22</td><td>R = (d - sqrt(d**2 - 4*k*Mn)) / (2*k)</td><td>0.91 ms</td><td>MPa*mm²</td><td>Mn=222222222.22, d=452.00, k=0.00</td></tr><tr><td>2c3157</td><td>As = R / fy</td><td>0.56 ms</td><td>mm²</td><td>R=532670.80, fy=420.00</td></tr></tbody></table></div>
+<div class='log-panel'><h3>Registro de evaluación</h3><table><thead><tr><th>Bloque</th><th>Expresión</th><th>Tiempo</th><th>Unidades</th><th>Sustituciones</th></tr></thead><tbody><tr><td>e3b0d1</td><td>fc = 30 MPa</td><td>0.30 ms</td><td>MPa</td><td>-</td></tr><tr><td>cd9c9e</td><td>fy = 420 MPa</td><td>0.13 ms</td><td>MPa</td><td>-</td></tr><tr><td>5074a7</td><td>b = 300 mm</td><td>0.12 ms</td><td>mm</td><td>-</td></tr><tr><td>ef78d3</td><td>h = 500 mm</td><td>0.11 ms</td><td>mm</td><td>-</td></tr><tr><td>c8663d</td><td>cobertura = 40 mm</td><td>0.11 ms</td><td>mm</td><td>-</td></tr><tr><td>9a19cf</td><td>diametro_barra = 16 mm</td><td>0.11 ms</td><td>mm</td><td>-</td></tr><tr><td>ae291b</td><td>phi = 0.90</td><td>0.58 ms</td><td></td><td>-</td></tr><tr><td>8dd01c</td><td>Mu = 200e6 N*mm</td><td>0.17 ms</td><td>mm*N</td><td>-</td></tr><tr><td>8b4519</td><td>d = h - cobertura - diametro_barra/2</td><td>0.75 ms</td><td>mm</td><td>cobertura=40.00, diametro_barra=16.00, h=500.00</td></tr><tr><td>9f745d</td><td>k = 1 / (2 * 0.85 * fc * b)</td><td>0.58 ms</td><td>1/MPa/mm</td><td>-</td></tr><tr><td>4fadcf</td><td>Mn = Mu / phi</td><td>0.55 ms</td><td>mm*N</td><td>Mu=200000000.00, phi=0.90</td></tr><tr><td>ec9e22</td><td>R = (d - sqrt(d**2 - 4*k*Mn)) / (2*k)</td><td>0.87 ms</td><td>MPa*mm²</td><td>Mn=222222222.22, d=452.00, k=0.00</td></tr><tr><td>2c3157</td><td>As = R / fy</td><td>0.59 ms</td><td>mm²</td><td>R=532670.80, fy=420.00</td></tr></tbody></table></div>
             </div>
         </body>
         </html>
