@@ -253,11 +253,11 @@ class NotebookTab(QWidget):
         if not path:
             return
 
-            mathjax_path, _ = QFileDialog.getOpenFileName(
-                self,
-                "Optional MathJax bundle (leave empty to use CDN)",
-                "",
-                "JavaScript Files (*.js);;All Files (*)",
+        mathjax_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Optional MathJax bundle (leave empty to use CDN)",
+            "",
+            "JavaScript Files (*.js);;All Files (*)",
         )
         if not mathjax_path:
             mathjax_path = None

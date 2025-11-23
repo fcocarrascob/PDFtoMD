@@ -139,10 +139,21 @@ class MainWindow(QMainWindow):
         self.queue_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.pdf_layout.addWidget(self.queue_label)
 
+        # Queue controls
+        queue_controls = QHBoxLayout()
+
         # AI Toggle
         self.ai_checkbox = QCheckBox("Use AI Agent (OpenAI)")
         self.ai_checkbox.setToolTip("Requires API Key in Settings. Slower but better for complex PDFs.")
-        self.pdf_layout.addWidget(self.ai_checkbox)
+        queue_controls.addWidget(self.ai_checkbox)
+
+        self.clear_queue_btn = QPushButton("Clear Queue")
+        self.clear_queue_btn.setEnabled(False)
+        self.clear_queue_btn.clicked.connect(self.clear_queue)
+        queue_controls.addWidget(self.clear_queue_btn)
+
+        queue_controls.addStretch()
+        self.pdf_layout.addLayout(queue_controls)
 
         # Start Button
         self.start_btn = QPushButton("Start Processing")
@@ -244,6 +255,16 @@ class MainWindow(QMainWindow):
         self.queue_label.setText(f"Queue: {count} files ready")
         self.start_btn.setEnabled(count > 0)
         self.start_btn.setText(f"Start Processing ({count})")
+        self.clear_queue_btn.setEnabled(count > 0)
+
+    def clear_queue(self):
+        self.file_queue = []
+        self.update_queue_ui()
+        self.label.setText("Drag & Drop PDF files here")
+        self.status_label.clear()
+        self.progress.hide()
+        self.setAcceptDrops(True)
+        self.split_btn.setEnabled(True)
 
     def start_batch_processing(self):
         if not self.file_queue:
