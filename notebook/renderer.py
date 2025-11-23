@@ -31,6 +31,7 @@ class NotebookRenderer:
         *,
         mathjax_path: str | None = None,
         mathjax_url: str | None = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js",
+        options=None,
     ) -> str:
         """Return full HTML including MathJax and styling.
 

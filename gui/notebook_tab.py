@@ -253,11 +253,11 @@ class NotebookTab(QWidget):
         if not path:
             return
 
-        mathjax_path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Optional MathJax bundle (leave empty to use CDN)",
-            "",
-            "JavaScript Files (*.js);;All Files (*)",
+            mathjax_path, _ = QFileDialog.getOpenFileName(
+                self,
+                "Optional MathJax bundle (leave empty to use CDN)",
+                "",
+                "JavaScript Files (*.js);;All Files (*)",
         )
         if not mathjax_path:
             mathjax_path = None
@@ -267,6 +267,7 @@ class NotebookTab(QWidget):
                 path,
                 renderer=self.renderer,
                 mathjax_path=mathjax_path,
+                options=self._evaluation_options(),
             )
             QMessageBox.information(self, "Export complete", f"Saved HTML to {path}")
         except Exception as exc:  # pylint: disable=broad-except
