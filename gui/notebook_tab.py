@@ -23,7 +23,7 @@ from PySide6.QtWebEngineWidgets import QWebEngineView
 
 from notebook.document import Document, FormulaBlock, NotebookOptions, TextBlock
 from notebook.renderer import NotebookRenderer
-from notebook.units import COMMON_UNITS, build_common_units
+from notebook.units import COMMON_UNITS, build_common_units, validate_unit
 
 
 class NotebookTab(QWidget):
@@ -316,6 +316,10 @@ class NotebookTab(QWidget):
         self.unit_combo = QComboBox()
         self.unit_combo.setEditable(True)
 
+        self.convert_combo = QComboBox()
+        self.convert_combo.setEditable(True)
+        self.convert_combo.setToolTip("Unidad destino para to(<unidad>)")
+
         edit_units_btn = QToolButton()
         edit_units_btn.setText("Edit Units")
         edit_units_btn.setToolTip("Customize the quick-pick unit list")
@@ -337,8 +341,15 @@ class NotebookTab(QWidget):
         unit_btn.setToolTip("Insert selected unit")
         unit_btn.clicked.connect(self.insert_selected_unit)
 
+        convert_btn = QToolButton()
+        convert_btn.setText("to()")
+        convert_btn.setToolTip("Insertar conversión to(<unidad>) con validación")
+        convert_btn.clicked.connect(self.insert_conversion_call)
+
         layout.addWidget(self.unit_combo)
         layout.addWidget(unit_btn)
+        layout.addWidget(self.convert_combo)
+        layout.addWidget(convert_btn)
         layout.addWidget(edit_units_btn)
         layout.addWidget(self.target_unit_combo)
         layout.addWidget(self.simplify_checkbox)
@@ -355,8 +366,18 @@ class NotebookTab(QWidget):
     def insert_selected_unit(self) -> None:
         """Insert the unit chosen from the combo."""
 
-        unit = self.unit_combo.currentText()
+        unit = self._validated_unit(self.unit_combo.currentText())
+        if not unit:
+            return
         self.insert_snippet(f" {unit}")
+
+    def insert_conversion_call(self) -> None:
+        """Insert a ``to(<unit>)`` conversion validated by pint."""
+
+        unit = self._validated_unit(self.convert_combo.currentText())
+        if not unit:
+            return
+        self.insert_snippet(f".to('{unit}')")
 
     # Unit presets and preferences
     def _load_unit_presets(self) -> list[str]:
@@ -368,7 +389,11 @@ class NotebookTab(QWidget):
         return []
 
     def _load_target_unit(self) -> str:
-        return str(self.settings.value("notebook/target_unit", "") or "")
+        stored = str(self.settings.value("notebook/target_unit", "") or "")
+        try:
+            return validate_unit(stored) if stored else ""
+        except ValueError:
+            return ""
 
     def _load_simplify_units(self) -> bool:
         stored = self.settings.value("notebook/simplify_units", True)
@@ -388,6 +413,11 @@ class NotebookTab(QWidget):
         self.unit_combo.clear()
         self.unit_combo.addItems(self.unit_presets)
         self.unit_combo.blockSignals(False)
+
+        self.convert_combo.blockSignals(True)
+        self.convert_combo.clear()
+        self.convert_combo.addItems(self.unit_presets)
+        self.convert_combo.blockSignals(False)
 
         current_target = self.target_unit if initialize else self._current_target_unit()
         self.target_unit_combo.blockSignals(True)
@@ -420,6 +450,11 @@ class NotebookTab(QWidget):
         normalized = text.strip()
         if normalized == self._target_placeholder:
             normalized = ""
+        if normalized and not self._validated_unit(normalized):
+            self.target_unit_combo.blockSignals(True)
+            self.target_unit_combo.setCurrentIndex(0)
+            self.target_unit_combo.blockSignals(False)
+            return
         self.target_unit = normalized
         self.settings.setValue("notebook/target_unit", normalized)
         self.update_preview()
@@ -440,3 +475,16 @@ class NotebookTab(QWidget):
             target_unit=self._current_target_unit(),
             simplify_units=self.simplify_checkbox.isChecked(),
         )
+
+    def _validated_unit(self, unit_text: str) -> str | None:
+        """Validate a unit string, surfacing errors to the user."""
+
+        cleaned = unit_text.strip()
+        if not cleaned:
+            QMessageBox.warning(self, "Unidad requerida", "Introduce una unidad válida.")
+            return None
+        try:
+            return validate_unit(cleaned)
+        except ValueError as exc:
+            QMessageBox.critical(self, "Unidad inválida", str(exc))
+            return None

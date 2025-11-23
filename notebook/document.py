@@ -25,7 +25,13 @@ from sympy.parsing.sympy_parser import (
     implicit_multiplication_application,
 )
 
-from notebook.units import COMMON_UNITS, get_unit_registry, math_env
+from notebook.units import (
+    COMMON_UNITS,
+    get_unit_registry,
+    math_env,
+    normalize_quantity,
+    validate_unit,
+)
 
 if TYPE_CHECKING:  # Avoid runtime import cycles with the renderer
     from notebook.renderer import NotebookRenderer
@@ -268,6 +274,7 @@ class FormulaBlock(Block):
                 if len(parts) == 2:
                     unit_registry = get_unit_registry()
                     units = " ".join(parts[1:])
+                    validate_unit(units)
                     quantity = value * unit_registry(units)
                     return sp.Float(value), quantity
                 return sp.Float(value), None
@@ -321,8 +328,10 @@ class FormulaBlock(Block):
     def _normalize_expression(expression: str) -> str:
         """Insert explicit multiplication between digits/closing parens and symbols/funcs."""
 
+        expr = re.sub(r"(?<=\d)\s+(?=[A-Za-z\(])", "*", expression)
+        expr = re.sub(r"(?<=\))\s*(?=[A-Za-z\(])", "*", expr)
         # Turn "1MPa" or "3sqrt(3)" into "1*MPa" / "3*sqrt(3)"
-        expr = re.sub(r"(?<=\d)(?=[A-Za-z\(])", "*", expression)
+        expr = re.sub(r"(?<=\d)(?=[A-Za-z\(])", "*", expr)
         # Turn ")(" into ")*(" for implicit multiplication of parenthesized factors.
         expr = expr.replace(")(", ")*(")
         return expr
@@ -366,34 +375,17 @@ class FormulaBlock(Block):
         return f"{value:.2f}"
 
     @staticmethod
-    def _format_quantity(quantity: Quantity, options: "NotebookOptions") -> tuple[float, str]:
+    def _format_quantity(
+        quantity: Quantity, options: "NotebookOptions"
+    ) -> tuple[float, str, Quantity]:
         """Normalize a quantity for display and numeric storage."""
 
-        ureg = get_unit_registry()
-
         target_unit = (options.target_unit or "").strip() if options else ""
-        if target_unit:
-            quantity = quantity.to(target_unit)
-
         simplify_units = True if options is None else options.simplify_units
 
-        if simplify_units:
-            try:
-                # Custom simplifications for common mechanical combos.
-                if quantity.check("[pressure] * [length]"):
-                    quantity = quantity.to(ureg.newton / ureg.meter)
-                elif quantity.check("[pressure]"):
-                    quantity = quantity.to(ureg.pascal)
-            except Exception:
-                pass
-
-            try:
-                quantity = quantity.to_compact()
-            except Exception:
-                pass
-
-        units_text = f"{quantity.units:~P}".replace("\u00b7", "*").replace(" ", "")
-        return float(quantity.magnitude), units_text
+        return normalize_quantity(
+            quantity, target_unit=target_unit or None, simplify=simplify_units
+        )
 
     def _handle_unit_error(
         self,
@@ -404,7 +396,7 @@ class FormulaBlock(Block):
     ) -> None:
         """Persist unit conversion errors for downstream display."""
 
-        self.result = f"Error converting units: {exc}"
+        self.result = f"Error de unidades: {exc}"
         self.evaluation_status = "error"
         self.error_type = type(exc).__name__
         self.error_message = str(exc)
@@ -465,13 +457,15 @@ class FormulaBlock(Block):
                     self.sympy_expr, quantity = self._parse_assignment(rhs, context)
                     # First try with explicit quantity from parsing.
                     if quantity is not None:
-                        self.quantity = quantity
                         try:
-                            magnitude, normalized_units = self._format_quantity(quantity, options)
+                            magnitude, normalized_units, normalized_quantity = self._format_quantity(
+                                quantity, options
+                            )
                         except Exception as exc:
                             expr_latex = sp.latex(self.sympy_expr) if self.sympy_expr is not None else html.escape(rhs)
                             self._handle_unit_error(exc, context, expr_latex, lhs)
                             return
+                        self.quantity = normalized_quantity
                         self.numeric_value = magnitude
                         self.units = normalized_units
                         self.result = f"{self._format_numeric_value(magnitude)} {normalized_units}"
@@ -480,7 +474,7 @@ class FormulaBlock(Block):
                         pint_value, pint_error = self._evaluate_with_pint(rhs, context)
                         if pint_error is not None:
                             expr_latex = sp.latex(self.sympy_expr) if self.sympy_expr is not None else html.escape(rhs)
-                            self.result = f"Error evaluating units: {pint_error}"
+                            self.result = f"Error al evaluar unidades: {pint_error}"
                             self.evaluation_status = "error"
                             self.error_type = type(pint_error).__name__
                             self.error_message = str(pint_error)
@@ -495,13 +489,15 @@ class FormulaBlock(Block):
 
                         quantity_value = self._to_quantity(pint_value)
                         if quantity_value is not None:
-                            self.quantity = quantity_value
                             try:
-                                magnitude, normalized_units = self._format_quantity(quantity_value, options)
+                                magnitude, normalized_units, normalized_quantity = self._format_quantity(
+                                    quantity_value, options
+                                )
                             except Exception as exc:
                                 expr_latex = sp.latex(self.sympy_expr) if self.sympy_expr is not None else html.escape(rhs)
                                 self._handle_unit_error(exc, context, expr_latex, lhs)
                                 return
+                            self.quantity = normalized_quantity
                             self.numeric_value = magnitude
                             self.units = normalized_units
                             self.result = f"{self._format_numeric_value(magnitude)} {normalized_units}"
@@ -526,7 +522,7 @@ class FormulaBlock(Block):
             self.sympy_expr = self._safe_sympify(raw, context)
             pint_value, pint_error = self._evaluate_with_pint(raw, context)
             if pint_error is not None:
-                self.result = f"Error evaluating units: {pint_error}"
+                self.result = f"Error al evaluar unidades: {pint_error}"
                 self.evaluation_status = "error"
                 self.error_type = type(pint_error).__name__
                 self.error_message = str(pint_error)
@@ -540,13 +536,15 @@ class FormulaBlock(Block):
 
             quantity_value = self._to_quantity(pint_value)
             if quantity_value is not None:
-                self.quantity = quantity_value
                 try:
-                    magnitude, normalized_units = self._format_quantity(quantity_value, options)
+                    magnitude, normalized_units, normalized_quantity = self._format_quantity(
+                        quantity_value, options
+                    )
                 except Exception as exc:
                     expr_latex = sp.latex(self.sympy_expr) if self.sympy_expr is not None else html.escape(raw)
                     self._handle_unit_error(exc, context, expr_latex)
                     return
+                self.quantity = normalized_quantity
                 self.numeric_value = magnitude
                 self.units = normalized_units
                 self.result = f"{self._format_numeric_value(magnitude)} {normalized_units}"

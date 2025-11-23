@@ -157,7 +157,7 @@ class NotebookRenderer:
             "<h3>Variables</h3>"
             "<table>"
             "<thead>"
-            "<tr><th>Name</th><th>Expression</th><th>Value</th><th>Units</th></tr>"
+            "<tr><th>Nombre</th><th>Expresión</th><th>Valor</th><th>Unidades</th></tr>"
             "</thead>"
             "<tbody>"
             + "".join(rows)
