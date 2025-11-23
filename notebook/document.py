@@ -395,6 +395,21 @@ class FormulaBlock(Block):
         units_text = f"{quantity.units:~P}".replace("\u00b7", "*").replace(" ", "")
         return float(quantity.magnitude), units_text
 
+    @staticmethod
+    def _latex_contains_unit_tokens(latex_expr: str, units: str) -> bool:
+        """Return True when the LaTeX already shows the given unit symbols."""
+
+        tokens = re.findall(r"[A-Za-z]+", units)
+        if not tokens:
+            return False
+        return all(re.search(rf"(?<![A-Za-z]){re.escape(token)}(?![A-Za-z])", latex_expr) for token in tokens)
+
+    @staticmethod
+    def _latex_mentions_common_unit(latex_expr: str) -> bool:
+        """Heuristic: detect if any known unit symbol already appears in the LaTeX."""
+
+        return any(re.search(rf"(?<![A-Za-z]){re.escape(unit)}(?![A-Za-z])", latex_expr) for unit in COMMON_UNITS)
+
     def _handle_unit_error(
         self,
         exc: Exception,
@@ -517,7 +532,11 @@ class FormulaBlock(Block):
                     expr_latex = sp.latex(self.sympy_expr) if self.sympy_expr is not None else html.escape(rhs)
                     display_latex = expr_latex
                     if self.units:
-                        display_latex = f"{display_latex}\\;{html.escape(self.units)}"
+                        already_has_units = self._latex_contains_unit_tokens(expr_latex, self.units)
+                        if not already_has_units:
+                            already_has_units = self._latex_mentions_common_unit(expr_latex)
+                        if not already_has_units:
+                            display_latex = f"{display_latex}\\;{html.escape(self.units)}"
                     self.latex = f"{html.escape(lhs)} = {display_latex}"
                     context.register_variable(lhs, expr_latex, self.numeric_value, self.units, self.quantity)
                     return
