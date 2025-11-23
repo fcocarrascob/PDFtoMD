@@ -756,6 +756,16 @@ class Document:
         self._redo_stack.clear()
         return True
 
+    def insert_block(self, index: int, block: Block) -> bool:
+        """Insert a block at a specific index while keeping undo history."""
+
+        if not (0 <= index <= len(self.blocks)):
+            return False
+        self._push_history()
+        self.blocks.insert(index, block)
+        self._redo_stack.clear()
+        return True
+
     # History management
     def _push_history(self) -> None:
         # Create a lightweight snapshot via serialization to avoid deepcopy issues
