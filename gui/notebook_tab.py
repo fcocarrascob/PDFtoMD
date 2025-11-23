@@ -1,24 +1,29 @@
 """Notebook tab with SymPy-powered formula preview."""
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QSettings
+from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QComboBox,
+    QFileDialog,
+    QInputDialog,
     QListWidget,
     QListWidgetItem,
+    QMessageBox,
     QPushButton,
     QSplitter,
     QTextEdit,
     QToolButton,
     QVBoxLayout,
     QWidget,
+    QCheckBox,
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
 
-from notebook.document import Document, FormulaBlock, TextBlock
+from notebook.document import Document, FormulaBlock, NotebookOptions, TextBlock
 from notebook.renderer import NotebookRenderer
-from notebook.units import COMMON_UNITS
+from notebook.units import COMMON_UNITS, build_common_units
 
 
 class NotebookTab(QWidget):
@@ -29,6 +34,13 @@ class NotebookTab(QWidget):
         self.document = Document()
         self.renderer = NotebookRenderer()
 
+        self.settings = getattr(parent, "settings", QSettings("MyCompany", "PDFtoMD"))
+        self.unit_presets = build_common_units(self._load_unit_presets())
+        COMMON_UNITS[:] = self.unit_presets
+        self.target_unit = self._load_target_unit()
+        self.simplify_units = self._load_simplify_units()
+        self._target_placeholder = "(auto)"
+
         # UI elements
         self.block_list = QListWidget()
         self.editor = QTextEdit()
@@ -36,6 +48,7 @@ class NotebookTab(QWidget):
 
         self._setup_ui()
         self._connect_signals()
+        self._setup_shortcuts()
         self._seed_document()
 
     def _setup_ui(self) -> None:
@@ -54,9 +67,37 @@ class NotebookTab(QWidget):
         delete_btn = QPushButton("Delete Selected")
         delete_btn.clicked.connect(self.delete_selected_block)
 
+        export_html_btn = QPushButton("Export HTML")
+        export_html_btn.clicked.connect(self.export_html)
+        export_md_btn = QPushButton("Export Markdown")
+        export_md_btn.clicked.connect(self.export_markdown)
+
+        move_up_btn = QPushButton("Move Up")
+        move_up_btn.clicked.connect(lambda: self.move_selected_block(-1))
+        move_down_btn = QPushButton("Move Down")
+        move_down_btn.clicked.connect(lambda: self.move_selected_block(1))
+
+        undo_btn = QPushButton("Undo")
+        undo_btn.clicked.connect(self.undo_action)
+        redo_btn = QPushButton("Redo")
+        redo_btn.clicked.connect(self.redo_action)
+
+        save_btn = QPushButton("Save Notebook")
+        save_btn.clicked.connect(self.save_document)
+        load_btn = QPushButton("Load Notebook")
+        load_btn.clicked.connect(self.load_document)
+
         left_layout.addWidget(add_text_btn)
         left_layout.addWidget(add_formula_btn)
         left_layout.addWidget(delete_btn)
+        left_layout.addWidget(export_html_btn)
+        left_layout.addWidget(export_md_btn)
+        left_layout.addWidget(move_up_btn)
+        left_layout.addWidget(move_down_btn)
+        left_layout.addWidget(undo_btn)
+        left_layout.addWidget(redo_btn)
+        left_layout.addWidget(save_btn)
+        left_layout.addWidget(load_btn)
         left_layout.addWidget(self.block_list, 1)
 
         # Right column: editor + preview stacked vertically
@@ -79,6 +120,12 @@ class NotebookTab(QWidget):
     def _connect_signals(self) -> None:
         self.block_list.currentItemChanged.connect(self.on_block_selected)
         self.editor.textChanged.connect(self.on_editor_changed)
+
+    def _setup_shortcuts(self) -> None:
+        QShortcut(QKeySequence("Ctrl+Up"), self, activated=lambda: self.move_selected_block(-1))
+        QShortcut(QKeySequence("Ctrl+Down"), self, activated=lambda: self.move_selected_block(1))
+        QShortcut(QKeySequence.StandardKey.Undo, self, activated=self.undo_action)
+        QShortcut(QKeySequence.StandardKey.Redo, self, activated=self.redo_action)
 
     def _seed_document(self) -> None:
         """Add a starter text and formula block so the preview is not empty."""
@@ -107,16 +154,60 @@ class NotebookTab(QWidget):
     def delete_selected_block(self) -> None:
         current_row = self.block_list.currentRow()
         if 0 <= current_row < len(self.document.blocks):
-            del self.document.blocks[current_row]
+            self.document.delete_block(current_row)
             self._refresh_block_list(select_row=max(0, current_row - 1))
             self.update_preview()
+
+    def move_selected_block(self, direction: int) -> None:
+        current_row = self.block_list.currentRow()
+        if current_row < 0:
+            return
+        target_row = current_row + direction
+        if self.document.move_block(current_row, target_row):
+            self._refresh_block_list(select_row=target_row)
+            self.update_preview()
+
+    def undo_action(self) -> None:
+        if self.document.undo():
+            self._refresh_block_list(select_row=min(self.block_list.currentRow(), len(self.document.blocks) - 1))
+            self.update_preview()
+
+    def redo_action(self) -> None:
+        if self.document.redo():
+            self._refresh_block_list(select_row=min(self.block_list.currentRow(), len(self.document.blocks) - 1))
+            self.update_preview()
+
+    def save_document(self) -> None:
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Save Notebook", "", "Notebook Files (*.json *.yaml *.yml)"
+        )
+        if not path:
+            return
+        try:
+            self.document.save(path)
+        except Exception as exc:  # pylint: disable=broad-except
+            QMessageBox.critical(self, "Save Failed", str(exc))
+
+    def load_document(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Load Notebook", "", "Notebook Files (*.json *.yaml *.yml)"
+        )
+        if not path:
+            return
+        try:
+            self.document = Document.load(path)
+            self.renderer = NotebookRenderer()
+            self._refresh_block_list()
+            self.update_preview()
+        except Exception as exc:  # pylint: disable=broad-except
+            QMessageBox.critical(self, "Load Failed", str(exc))
 
     # UI updates
     def _refresh_block_list(self, select_last: bool = False, select_row: int | None = None) -> None:
         self.block_list.clear()
         for idx, block in enumerate(self.document.blocks):
             title = "Text" if isinstance(block, TextBlock) else "Formula"
-            item = QListWidgetItem(f"{idx + 1}. {title}")
+            item = QListWidgetItem(f"{idx + 1}. {title} [{block.block_id[:6]}]")
             self.block_list.addItem(item)
         if self.document.blocks:
             if select_last:
@@ -148,8 +239,56 @@ class NotebookTab(QWidget):
 
     def update_preview(self) -> None:
         """Render the document into the web view with MathJax."""
-        html_content = self.document.to_html(renderer=self.renderer)
+        html_content = self.document.to_html(
+            renderer=self.renderer, options=self._evaluation_options()
+        )
         self.preview.setHtml(html_content)
+
+    def export_html(self) -> None:
+        """Persist the rendered notebook to an HTML file."""
+
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Export Notebook as HTML", "", "HTML Files (*.html)"
+        )
+        if not path:
+            return
+
+            mathjax_path, _ = QFileDialog.getOpenFileName(
+                self,
+                "Optional MathJax bundle (leave empty to use CDN)",
+                "",
+                "JavaScript Files (*.js);;All Files (*)",
+        )
+        if not mathjax_path:
+            mathjax_path = None
+
+        try:
+            self.document.save_html(
+                path,
+                renderer=self.renderer,
+                mathjax_path=mathjax_path,
+                options=self._evaluation_options(),
+            )
+            QMessageBox.information(self, "Export complete", f"Saved HTML to {path}")
+        except Exception as exc:  # pylint: disable=broad-except
+            QMessageBox.critical(self, "Export failed", str(exc))
+
+    def export_markdown(self) -> None:
+        """Save the notebook as a Markdown document."""
+
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Export Notebook as Markdown", "", "Markdown Files (*.md)"
+        )
+        if not path:
+            return
+
+        try:
+            self.document.save_markdown(path)
+            QMessageBox.information(
+                self, "Export complete", f"Saved Markdown to {path}"
+            )
+        except Exception as exc:  # pylint: disable=broad-except
+            QMessageBox.critical(self, "Export failed", str(exc))
 
     # Toolbar helpers
     def _build_toolbar(self) -> QWidget:
@@ -175,7 +314,24 @@ class NotebookTab(QWidget):
             layout.addWidget(btn)
 
         self.unit_combo = QComboBox()
-        self.unit_combo.addItems(COMMON_UNITS)
+        self.unit_combo.setEditable(True)
+
+        edit_units_btn = QToolButton()
+        edit_units_btn.setText("Edit Units")
+        edit_units_btn.setToolTip("Customize the quick-pick unit list")
+        edit_units_btn.clicked.connect(self._edit_unit_presets)
+
+        self.target_unit_combo = QComboBox()
+        self.target_unit_combo.setEditable(True)
+        self.target_unit_combo.setToolTip("Convert results to this unit when possible")
+        self.target_unit_combo.currentTextChanged.connect(self._persist_target_unit)
+
+        self.simplify_checkbox = QCheckBox("Simplify units")
+        self.simplify_checkbox.setChecked(self.simplify_units)
+        self.simplify_checkbox.toggled.connect(self._persist_simplify_units)
+
+        self._apply_unit_presets(self.unit_presets, initialize=True)
+
         unit_btn = QToolButton()
         unit_btn.setText("Unit")
         unit_btn.setToolTip("Insert selected unit")
@@ -183,6 +339,9 @@ class NotebookTab(QWidget):
 
         layout.addWidget(self.unit_combo)
         layout.addWidget(unit_btn)
+        layout.addWidget(edit_units_btn)
+        layout.addWidget(self.target_unit_combo)
+        layout.addWidget(self.simplify_checkbox)
         layout.addStretch()
         return container
 
@@ -198,3 +357,86 @@ class NotebookTab(QWidget):
 
         unit = self.unit_combo.currentText()
         self.insert_snippet(f" {unit}")
+
+    # Unit presets and preferences
+    def _load_unit_presets(self) -> list[str]:
+        raw_value = self.settings.value("notebook/unit_presets", [])
+        if isinstance(raw_value, list):
+            return [str(item) for item in raw_value if str(item).strip()]
+        if isinstance(raw_value, str):
+            return [piece.strip() for piece in raw_value.split("\n") if piece.strip()]
+        return []
+
+    def _load_target_unit(self) -> str:
+        return str(self.settings.value("notebook/target_unit", "") or "")
+
+    def _load_simplify_units(self) -> bool:
+        stored = self.settings.value("notebook/simplify_units", True)
+        if isinstance(stored, bool):
+            return stored
+        if isinstance(stored, str):
+            return stored.lower() in {"1", "true", "yes"}
+        return True
+
+    def _apply_unit_presets(self, presets: list[str], initialize: bool = False) -> None:
+        self.unit_presets = build_common_units(presets)
+        COMMON_UNITS[:] = self.unit_presets
+        if not initialize:
+            self.settings.setValue("notebook/unit_presets", self.unit_presets)
+
+        self.unit_combo.blockSignals(True)
+        self.unit_combo.clear()
+        self.unit_combo.addItems(self.unit_presets)
+        self.unit_combo.blockSignals(False)
+
+        current_target = self.target_unit if initialize else self._current_target_unit()
+        self.target_unit_combo.blockSignals(True)
+        self.target_unit_combo.clear()
+        self.target_unit_combo.addItem(self._target_placeholder)
+        self.target_unit_combo.addItems(self.unit_presets)
+        if current_target:
+            if self.target_unit_combo.findText(current_target) == -1:
+                self.target_unit_combo.addItem(current_target)
+            self.target_unit_combo.setCurrentText(current_target)
+        else:
+            self.target_unit_combo.setCurrentIndex(0)
+        self.target_unit_combo.blockSignals(False)
+
+    def _edit_unit_presets(self) -> None:
+        current_text = "\n".join(self.unit_presets)
+        text, ok = QInputDialog.getMultiLineText(
+            self,
+            "Edit unit presets",
+            "Units (one per line):",
+            current_text,
+        )
+        if not ok:
+            return
+        new_presets = build_common_units(text.splitlines())
+        self._apply_unit_presets(new_presets)
+        self.update_preview()
+
+    def _persist_target_unit(self, text: str) -> None:
+        normalized = text.strip()
+        if normalized == self._target_placeholder:
+            normalized = ""
+        self.target_unit = normalized
+        self.settings.setValue("notebook/target_unit", normalized)
+        self.update_preview()
+
+    def _current_target_unit(self) -> str | None:
+        normalized = self.target_unit_combo.currentText().strip()
+        if not normalized or normalized == self._target_placeholder:
+            return None
+        return normalized
+
+    def _persist_simplify_units(self, checked: bool) -> None:
+        self.simplify_units = checked
+        self.settings.setValue("notebook/simplify_units", checked)
+        self.update_preview()
+
+    def _evaluation_options(self) -> NotebookOptions:
+        return NotebookOptions(
+            target_unit=self._current_target_unit(),
+            simplify_units=self.simplify_checkbox.isChecked(),
+        )
