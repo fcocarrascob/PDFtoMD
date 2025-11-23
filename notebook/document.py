@@ -22,7 +22,6 @@ from pint import Quantity
 from sympy.parsing.sympy_parser import (
     parse_expr,
     standard_transformations,
-    implicit_multiplication_application,
 )
 
 from notebook.units import COMMON_UNITS, get_unit_registry, math_env
@@ -310,11 +309,11 @@ class FormulaBlock(Block):
             return parse_expr(
                 expr,
                 local_dict=context.symbols,
-                transformations=standard_transformations + (implicit_multiplication_application,),
+                transformations=standard_transformations,
             )
         return parse_expr(
             expr,
-            transformations=standard_transformations + (implicit_multiplication_application,),
+            transformations=standard_transformations,
         )
 
     @staticmethod
@@ -484,7 +483,9 @@ class FormulaBlock(Block):
                         try:
                             magnitude, normalized_units = self._format_quantity(quantity, options)
                         except Exception as exc:
-                            expr_latex = sp.latex(self.sympy_expr) if self.sympy_expr is not None else html.escape(rhs)
+                            expr_latex = (
+                                sp.latex(self.sympy_expr, order="none") if self.sympy_expr is not None else html.escape(rhs)
+                            )
                             self._handle_unit_error(exc, context, expr_latex, lhs)
                             return
                         self.numeric_value = magnitude
@@ -494,7 +495,9 @@ class FormulaBlock(Block):
                         # Try pint-eval using previously defined quantities.
                         pint_value, pint_error = self._evaluate_with_pint(rhs, context)
                         if pint_error is not None:
-                            expr_latex = sp.latex(self.sympy_expr) if self.sympy_expr is not None else html.escape(rhs)
+                            expr_latex = (
+                                sp.latex(self.sympy_expr, order="none") if self.sympy_expr is not None else html.escape(rhs)
+                            )
                             self.result = f"Error evaluating units: {pint_error}"
                             self.evaluation_status = "error"
                             self.error_type = type(pint_error).__name__
@@ -514,7 +517,11 @@ class FormulaBlock(Block):
                             try:
                                 magnitude, normalized_units = self._format_quantity(quantity_value, options)
                             except Exception as exc:
-                                expr_latex = sp.latex(self.sympy_expr) if self.sympy_expr is not None else html.escape(rhs)
+                                expr_latex = (
+                                    sp.latex(self.sympy_expr, order="none")
+                                    if self.sympy_expr is not None
+                                    else html.escape(rhs)
+                                )
                                 self._handle_unit_error(exc, context, expr_latex, lhs)
                                 return
                             self.numeric_value = magnitude
@@ -529,7 +536,9 @@ class FormulaBlock(Block):
                                 except (TypeError, ValueError):
                                     self.numeric_value = None
                             self.result = str(evaluated)
-                    expr_latex = sp.latex(self.sympy_expr) if self.sympy_expr is not None else html.escape(rhs)
+                    expr_latex = (
+                        sp.latex(self.sympy_expr, order="none") if self.sympy_expr is not None else html.escape(rhs)
+                    )
                     display_latex = expr_latex
                     if self.units:
                         already_has_units = self._latex_contains_unit_tokens(expr_latex, self.units)
@@ -549,7 +558,7 @@ class FormulaBlock(Block):
                 self.evaluation_status = "error"
                 self.error_type = type(pint_error).__name__
                 self.error_message = str(pint_error)
-                self.latex = sp.latex(self.sympy_expr)
+                self.latex = sp.latex(self.sympy_expr, order="none")
                 context.register_error(
                     block_id=self.block_id,
                     message=self.error_message,
@@ -563,7 +572,9 @@ class FormulaBlock(Block):
                 try:
                     magnitude, normalized_units = self._format_quantity(quantity_value, options)
                 except Exception as exc:
-                    expr_latex = sp.latex(self.sympy_expr) if self.sympy_expr is not None else html.escape(raw)
+                    expr_latex = (
+                        sp.latex(self.sympy_expr, order="none") if self.sympy_expr is not None else html.escape(raw)
+                    )
                     self._handle_unit_error(exc, context, expr_latex)
                     return
                 self.numeric_value = magnitude
@@ -578,7 +589,7 @@ class FormulaBlock(Block):
                         self.numeric_value = float(evaluated)
                     except (TypeError, ValueError):
                         self.numeric_value = None
-            self.latex = sp.latex(self.sympy_expr)
+            self.latex = sp.latex(self.sympy_expr, order="none")
         except Exception as exc:  # pylint: disable=broad-except
             # Keep evaluation errors but continue showing them in the UI.
             self.sympy_expr = None

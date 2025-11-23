@@ -1,6 +1,8 @@
 """Notebook tab with SymPy-powered formula preview."""
 from __future__ import annotations
 
+import re
+
 from PySide6.QtCore import Qt, QSettings, QTimer
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
@@ -48,6 +50,7 @@ class NotebookTab(QWidget):
         self.editor = QTextEdit()
         self.preview = QWebEngineView()
         self._delete_armed = False
+        self.hint_label = QLabel()
 
         self._setup_ui()
         self._connect_signals()
@@ -117,8 +120,10 @@ class NotebookTab(QWidget):
         self.block_stack.setAlternatingRowColors(True)
         right_layout.addWidget(self.block_stack, 1)
 
-        self.editor.setPlaceholderText("Enter text or a SymPy-friendly expression...")
+        self.editor.setPlaceholderText("Enter text or a SymPy-friendly expression (use * for multiplication: 3*MPa, 2*d)...")
         right_layout.addWidget(self.editor, 1)
+        self.hint_label.setStyleSheet("color: #f7c6c5; font-size: 11px;")
+        right_layout.addWidget(self.hint_label)
         right_layout.addWidget(self.preview, 2)
 
         splitter.addWidget(left_panel)
@@ -363,6 +368,16 @@ class NotebookTab(QWidget):
     def _focus_stack(self) -> None:
         self.block_stack.setFocus(Qt.FocusReason.OtherFocusReason)
 
+    def _update_hint(self, raw_text: str) -> None:
+        """Show a gentle reminder when implicit multiplication is detected."""
+
+        pattern = re.compile(r"(\d)([A-Za-z])|(\d)\(|\)(\d)|\)([A-Za-z])|([A-Za-z])\(")
+        message = "Usa * para multiplicar: ej. 3*MPa, 2*d, a*(b)"
+        if pattern.search(raw_text):
+            self.hint_label.setText(message)
+        else:
+            self.hint_label.setText("")
+
     def on_block_selected(self, current: QListWidgetItem, _previous: QListWidgetItem) -> None:
         row = self.block_list.currentRow()
         if row < 0:
@@ -389,6 +404,7 @@ class NotebookTab(QWidget):
             block.evaluate()
         self._update_stack_item(row)
         self.update_preview()
+        self._update_hint(block.raw)
 
     def update_preview(self) -> None:
         """Render the document into the web view with MathJax."""

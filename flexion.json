@@ -1,0 +1,158 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "type": "TextBlock",
+      "raw": "# Variables de entrada",
+      "id": "39ebe57c689e4918b0464f4962f27ce2"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "fc = 30 MPa",
+      "id": "e3b0d1e8aef5461da5c739e471c56b88",
+      "result": "30.00 MPa",
+      "latex": "fc = 30.0\\;MPa",
+      "numeric_value": 30.0,
+      "is_assignment": true,
+      "variable_name": "fc",
+      "units": "MPa"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "fy = 420 MPa\n",
+      "id": "cd9c9eb8e53f4e5386d3d9b3ad01e12c",
+      "result": "420.00 MPa",
+      "latex": "fy = 420.0\\;MPa",
+      "numeric_value": 420.0,
+      "is_assignment": true,
+      "variable_name": "fy",
+      "units": "MPa"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "b = 300 mm\n",
+      "id": "5074a7e5a046481aa0b6db7267f3626d",
+      "result": "300.00 mm",
+      "latex": "b = 300.0\\;mm",
+      "numeric_value": 300.0,
+      "is_assignment": true,
+      "variable_name": "b",
+      "units": "mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "h = 500 mm\n",
+      "id": "ef78d3a15adf4da3a7c2c99ce2614fb7",
+      "result": "500.00 mm",
+      "latex": "h = 500.0\\;mm",
+      "numeric_value": 500.0,
+      "is_assignment": true,
+      "variable_name": "h",
+      "units": "mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "cobertura = 40 mm\n",
+      "id": "c8663d433e9e47018fab21b11a62988b",
+      "result": "40.00 mm",
+      "latex": "cobertura = 40.0\\;mm",
+      "numeric_value": 40.0,
+      "is_assignment": true,
+      "variable_name": "cobertura",
+      "units": "mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "diametro_barra = 16 mm\n",
+      "id": "9a19cfa528934247b48a38a426bc9431",
+      "result": "16.00 mm",
+      "latex": "diametro_barra = 16.0\\;mm",
+      "numeric_value": 16.0,
+      "is_assignment": true,
+      "variable_name": "diametro_barra",
+      "units": "mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "phi = 0.90\n",
+      "id": "ae291b5da2a14a0a838bfccbba555ad3",
+      "result": "0.900000000000000",
+      "latex": "phi = 0.9",
+      "numeric_value": 0.9,
+      "is_assignment": true,
+      "variable_name": "phi",
+      "units": null
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Mu = 200e6 N*mm",
+      "id": "8dd01c3cc22d49c59ecd28abcc160aac",
+      "result": "200000000.00 mm*N",
+      "latex": "Mu = 200000000.0\\;mm*N",
+      "numeric_value": 200000000.0,
+      "is_assignment": true,
+      "variable_name": "Mu",
+      "units": "mm*N"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "d = h - cobertura - diametro_barra/2",
+      "id": "8b4519c1b22f4cfd8f9dba4e35a1ffc8",
+      "result": "452.00 mm",
+      "latex": "d = - cobertura - \\frac{diametro_{barra}}{2} + h\\;mm",
+      "numeric_value": 452.0,
+      "is_assignment": true,
+      "variable_name": "d",
+      "units": "mm"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "# Cálculo de As",
+      "id": "83e02e03a4754bf081c5123415bdf740"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "k = 1 / (2 * 0.85 * fc * b)\n",
+      "id": "9f745dc5d2cc48c39a9b1674d6331178",
+      "result": "0.00 1/MPa/mm",
+      "latex": "k = 1 / (2 * 0.85 * fc * b)\\;1/MPa/mm",
+      "numeric_value": 6.535947712418301e-05,
+      "is_assignment": true,
+      "variable_name": "k",
+      "units": "1/MPa/mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Mn = Mu / phi\n",
+      "id": "4fadcf7312294aa599922d2422bd39bf",
+      "result": "222222222.22 mm*N",
+      "latex": "Mn = \\frac{\\mathrm{M}}{\\phi}\\;mm*N",
+      "numeric_value": 222222222.2222222,
+      "is_assignment": true,
+      "variable_name": "Mn",
+      "units": "mm*N"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "R = (d - sqrt(d**2 - 4*k*Mn)) / (2*k) \n",
+      "id": "ec9e2249583842b4ba0b1d16c0143be3",
+      "result": "532670.80 MPa*mm²",
+      "latex": "R = \\frac{d - \\sqrt{- 4 Mn k + d^{2}}}{2 k}\\;MPa*mm²",
+      "numeric_value": 532670.7994346645,
+      "is_assignment": true,
+      "variable_name": "R",
+      "units": "MPa*mm²"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "As = R / fy",
+      "id": "2c3157347eb94255a90477f17a4fbf81",
+      "result": "1268.26 mm²",
+      "latex": "As = \\frac{R}{fy}\\;mm²",
+      "numeric_value": 1268.2638081777727,
+      "is_assignment": true,
+      "variable_name": "As",
+      "units": "mm²"
+    }
+  ]
+}
