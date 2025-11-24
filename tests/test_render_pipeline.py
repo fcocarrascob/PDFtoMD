@@ -19,12 +19,12 @@ def load_fixture(name: str) -> dict:
         return json.load(handle)
 
 
-def test_assignment_with_units_renders_fraction():
+def test_assignment_renders_fraction():
     payload = {
         "version": 1,
         "blocks": [
-            {"type": "FormulaBlock", "raw": "fc = 30 MPa"},
-            {"type": "FormulaBlock", "raw": "b = 300 mm"},
+            {"type": "FormulaBlock", "raw": "fc = 30"},
+            {"type": "FormulaBlock", "raw": "b = 300"},
             {"type": "FormulaBlock", "raw": "k = 1/(2*0.85*fc*b)"},
         ],
     }

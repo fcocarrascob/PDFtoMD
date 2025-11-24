@@ -113,13 +113,11 @@ class NotebookRenderer:
         rows = []
         for entry in logs:
             substitutions = ", ".join(entry.get("substitutions", [])) or "-"
-            units = html.escape(entry.get("units") or "")
             rows.append(
                 "<tr>"
                 f"<td>{html.escape(entry.get('block_id', '')[:6])}</td>"
                 f"<td>{html.escape(entry.get('expression', ''))}</td>"
                 f"<td>{entry.get('duration_ms', 0):.2f} ms</td>"
-                f"<td>{units}</td>"
                 f"<td>{html.escape(substitutions)}</td>"
                 "</tr>"
             )
@@ -129,7 +127,7 @@ class NotebookRenderer:
             "<h3>Registro de evaluación</h3>"
             "<table>"
             "<thead>"
-            "<tr><th>Bloque</th><th>Expresión</th><th>Tiempo</th><th>Unidades</th><th>Sustituciones</th></tr>"
+            "<tr><th>Bloque</th><th>Expresión</th><th>Tiempo</th><th>Sustituciones</th></tr>"
             "</thead>"
             "<tbody>"
             + "".join(rows)
@@ -149,7 +147,6 @@ class NotebookRenderer:
                 f"<td>{html.escape(variable.name)}</td>"
                 f"<td>$$ {variable.expression} $$</td>"
                 f"<td>{html.escape(value)}</td>"
-                f"<td>{html.escape(variable.units or '')}</td>"
                 "</tr>"
             )
         if not rows:
@@ -160,7 +157,7 @@ class NotebookRenderer:
             "<h3>Variables</h3>"
             "<table>"
             "<thead>"
-            "<tr><th>Name</th><th>Expression</th><th>Value</th><th>Units</th></tr>"
+            "<tr><th>Name</th><th>Expression</th><th>Value</th></tr>"
             "</thead>"
             "<tbody>"
             + "".join(rows)
@@ -171,7 +168,7 @@ class NotebookRenderer:
 
     @staticmethod
     def _format_value(numeric_value) -> str:
-        """Format numeric values and leave unit display to the dedicated column."""
+        """Format numeric values consistently."""
 
         if numeric_value is None:
             return ""

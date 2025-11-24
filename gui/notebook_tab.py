@@ -27,7 +27,6 @@ from PySide6.QtWebEngineWidgets import QWebEngineView
 
 from notebook.document import Block, Document, FormulaBlock, NotebookOptions, TextBlock
 from notebook.renderer import NotebookRenderer
-from notebook.units import COMMON_UNITS, build_common_units
 
 
 class NotebookTab(QWidget):
@@ -39,11 +38,6 @@ class NotebookTab(QWidget):
         self.renderer = NotebookRenderer()
 
         self.settings = getattr(parent, "settings", QSettings("MyCompany", "PDFtoMD"))
-        self.unit_presets = build_common_units(self._load_unit_presets())
-        COMMON_UNITS[:] = self.unit_presets
-        self.target_unit = self._load_target_unit()
-        self.simplify_units = self._load_simplify_units()
-        self._target_placeholder = "(auto)"
 
         # UI elements
         self.block_list = QListWidget()
@@ -121,7 +115,7 @@ class NotebookTab(QWidget):
         self.block_stack.setAlternatingRowColors(True)
         right_layout.addWidget(self.block_stack, 1)
 
-        self.editor.setPlaceholderText("Enter text or a SymPy-friendly expression (use * for multiplication: 3*MPa, 2*d)...")
+        self.editor.setPlaceholderText("Enter text or a SymPy-friendly expression (use * for multiplication: 3*a, 2*d)...")
         right_layout.addWidget(self.editor, 1)
         self.hint_label.setStyleSheet("color: #f7c6c5; font-size: 11px;")
         right_layout.addWidget(self.hint_label)
@@ -373,7 +367,7 @@ class NotebookTab(QWidget):
         """Show a gentle reminder when implicit multiplication is detected."""
 
         pattern = re.compile(r"(\d)([A-Za-z])|(\d)\(|\)(\d)|\)([A-Za-z])|([A-Za-z])\(")
-        message = "Usa * para multiplicar: ej. 3*MPa, 2*d, a*(b)"
+        message = "Usa * para multiplicar: ej. 3*a, 2*d, a*(b)"
         if pattern.search(raw_text):
             self.hint_label.setText(message)
         else:
@@ -520,35 +514,6 @@ class NotebookTab(QWidget):
         layout.addWidget(self.greek_combo)
         layout.addWidget(greek_btn)
 
-        self.unit_combo = QComboBox()
-        self.unit_combo.setEditable(True)
-
-        edit_units_btn = QToolButton()
-        edit_units_btn.setText("Edit Units")
-        edit_units_btn.setToolTip("Customize the quick-pick unit list")
-        edit_units_btn.clicked.connect(self._edit_unit_presets)
-
-        self.target_unit_combo = QComboBox()
-        self.target_unit_combo.setEditable(True)
-        self.target_unit_combo.setToolTip("Convert results to this unit when possible")
-        self.target_unit_combo.currentTextChanged.connect(self._persist_target_unit)
-
-        self.simplify_checkbox = QCheckBox("Simplify units")
-        self.simplify_checkbox.setChecked(self.simplify_units)
-        self.simplify_checkbox.toggled.connect(self._persist_simplify_units)
-
-        self._apply_unit_presets(self.unit_presets, initialize=True)
-
-        unit_btn = QToolButton()
-        unit_btn.setText("Unit")
-        unit_btn.setToolTip("Insert selected unit")
-        unit_btn.clicked.connect(self.insert_selected_unit)
-
-        layout.addWidget(self.unit_combo)
-        layout.addWidget(unit_btn)
-        layout.addWidget(edit_units_btn)
-        layout.addWidget(self.target_unit_combo)
-        layout.addWidget(self.simplify_checkbox)
         layout.addStretch()
         return container
 
@@ -558,89 +523,6 @@ class NotebookTab(QWidget):
         cursor = self.editor.textCursor()
         cursor.insertText(text)
         self.editor.setTextCursor(cursor)
-
-    def insert_selected_unit(self) -> None:
-        """Insert the unit chosen from the combo."""
-
-        unit = self.unit_combo.currentText()
-        self.insert_snippet(f" {unit}")
-
-    # Unit presets and preferences
-    def _load_unit_presets(self) -> list[str]:
-        raw_value = self.settings.value("notebook/unit_presets", [])
-        if isinstance(raw_value, list):
-            return [str(item) for item in raw_value if str(item).strip()]
-        if isinstance(raw_value, str):
-            return [piece.strip() for piece in raw_value.split("\n") if piece.strip()]
-        return []
-
-    def _load_target_unit(self) -> str:
-        return str(self.settings.value("notebook/target_unit", "") or "")
-
-    def _load_simplify_units(self) -> bool:
-        stored = self.settings.value("notebook/simplify_units", True)
-        if isinstance(stored, bool):
-            return stored
-        if isinstance(stored, str):
-            return stored.lower() in {"1", "true", "yes"}
-        return True
-
-    def _apply_unit_presets(self, presets: list[str], initialize: bool = False) -> None:
-        self.unit_presets = build_common_units(presets)
-        COMMON_UNITS[:] = self.unit_presets
-        if not initialize:
-            self.settings.setValue("notebook/unit_presets", self.unit_presets)
-
-        self.unit_combo.blockSignals(True)
-        self.unit_combo.clear()
-        self.unit_combo.addItems(self.unit_presets)
-        self.unit_combo.blockSignals(False)
-
-        current_target = self.target_unit if initialize else self._current_target_unit()
-        self.target_unit_combo.blockSignals(True)
-        self.target_unit_combo.clear()
-        self.target_unit_combo.addItem(self._target_placeholder)
-        self.target_unit_combo.addItems(self.unit_presets)
-        if current_target:
-            if self.target_unit_combo.findText(current_target) == -1:
-                self.target_unit_combo.addItem(current_target)
-            self.target_unit_combo.setCurrentText(current_target)
-        else:
-            self.target_unit_combo.setCurrentIndex(0)
-        self.target_unit_combo.blockSignals(False)
-
-    def _edit_unit_presets(self) -> None:
-        current_text = "\n".join(self.unit_presets)
-        text, ok = QInputDialog.getMultiLineText(
-            self,
-            "Edit unit presets",
-            "Units (one per line):",
-            current_text,
-        )
-        if not ok:
-            return
-        new_presets = build_common_units(text.splitlines())
-        self._apply_unit_presets(new_presets)
-        self.update_preview()
-
-    def _persist_target_unit(self, text: str) -> None:
-        normalized = text.strip()
-        if normalized == self._target_placeholder:
-            normalized = ""
-        self.target_unit = normalized
-        self.settings.setValue("notebook/target_unit", normalized)
-        self.update_preview()
-
-    def _current_target_unit(self) -> str | None:
-        normalized = self.target_unit_combo.currentText().strip()
-        if not normalized or normalized == self._target_placeholder:
-            return None
-        return normalized
-
-    def _persist_simplify_units(self, checked: bool) -> None:
-        self.simplify_units = checked
-        self.settings.setValue("notebook/simplify_units", checked)
-        self.update_preview()
 
     def _hide_logs_pref(self) -> bool:
         stored = self.settings.value("render/hide_logs", False)
@@ -663,7 +545,5 @@ class NotebookTab(QWidget):
 
     def _evaluation_options(self, hide_logs: bool = False) -> NotebookOptions:
         return NotebookOptions(
-            target_unit=self._current_target_unit(),
-            simplify_units=self.simplify_checkbox.isChecked(),
             hide_logs=hide_logs,
         )
