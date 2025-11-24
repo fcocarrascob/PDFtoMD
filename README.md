@@ -65,3 +65,15 @@ Aplicación de escritorio en PySide6 que combina dos pestañas:
   - LaTeX se genera desde `sympy_expr` cuando existe; si no, se usa un fallback del texto crudo.
   - MathJax renderiza inline (`$...$`) y bloque (`$$...$$`); la exportación HTML incluye MathJax (CDN o bundle local) y puede ocultar el panel de logs según preferencias.
   - El HTML se estiliza con tema claro y layout tipo página A4; la tabla de variables muestra nombre, expresión, valor y unidades.
+
+## ¿SymPy es suficiente o conviene añadir NumPy?
+Para los cálculos de fórmulas normativas (ACI 318, AISC 360) que maneja el cuaderno, SymPy + pint ya cubren los casos habituales:
+- **Parsing y álgebra simbólica:** SymPy interpreta expresiones como `phi*Mn >= Mu`, reorganiza términos y genera el LaTeX que se previsualiza.
+- **Unidades físicas:** pint mantiene las unidades y permite convertirlas; esto evita errores al mezclar MPa, ksi, mm, in, etc.
+- **Evaluación paso a paso:** cada bloque reutiliza el contexto evaluado anterior, lo que facilita cadenas de comprobaciones.
+
+NumPy resulta útil como complemento cuando necesitas:
+- **Vectorizar series grandes de combinaciones o secciones** (p. ej. iterar cientos de perfiles o envolventes de carga). En estos casos puedes preparar arrays en una celda, evaluarlos con NumPy y luego pasar resultados escalares a las fórmulas SymPy que renderizan el reporte.
+- **Operaciones matriciales intensivas** (rigideces, modos, integración numérica) donde las rutinas BLAS subyacentes mejoran el tiempo de cómputo.
+
+Para casos típicos de diseño manual o verificación de pocos elementos, SymPy es suficiente y mantiene el pipeline de unidades/LaTeX sin añadir dependencias binarias. Considera añadir NumPy si tu flujo involucra muchos escenarios repetitivos o cálculos matriciales donde la velocidad sea crítica.

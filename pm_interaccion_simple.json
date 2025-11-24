@@ -1,0 +1,496 @@
+{
+  "version": 1,
+  "blocks": [
+    {
+      "type": "TextBlock",
+      "raw": "# Ejemplo simplificado de diagrama P–M\nColumna rectangular de hormigón armado (ACI 318).",
+      "id": "74847b043e6f4406a7932f6ec483a828"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "## Propiedades básicas",
+      "id": "909dc511d0b144c7ba6c549dc0e49cee"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "fc = 28 MPa",
+      "id": "81c89433f17c437294b67ddf4698dbb9",
+      "result": "28.00 MPa",
+      "latex": "fc = 28.0\\;MPa",
+      "numeric_value": 28.0,
+      "is_assignment": true,
+      "variable_name": "fc",
+      "units": "MPa"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "fy = 420 MPa",
+      "id": "19b35d6322f44bc0a98bfbd605273ead",
+      "result": "420.00 MPa",
+      "latex": "fy = 420.0\\;MPa",
+      "numeric_value": 420.0,
+      "is_assignment": true,
+      "variable_name": "fy",
+      "units": "MPa"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Es = 200000 MPa",
+      "id": "4b6957ea198646149d81736393687524",
+      "result": "200.00 GPa",
+      "latex": "Es = 200000.0\\;GPa",
+      "numeric_value": 200.0,
+      "is_assignment": true,
+      "variable_name": "Es",
+      "units": "GPa"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "b = 300 mm",
+      "id": "a03bdd1a277a4154ae0551ef94dbd687",
+      "result": "300.00 mm",
+      "latex": "b = 300.0\\;mm",
+      "numeric_value": 300.0,
+      "is_assignment": true,
+      "variable_name": "b",
+      "units": "mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "h = 500 mm",
+      "id": "edab1fac2cc64a59b83ed68785e3d237",
+      "result": "500.00 mm",
+      "latex": "h = 500.0\\;mm",
+      "numeric_value": 500.0,
+      "is_assignment": true,
+      "variable_name": "h",
+      "units": "mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "cobertura = 40 mm",
+      "id": "bcfbcb51bfdf477199f4f023a1df3af8",
+      "result": "40.00 mm",
+      "latex": "cobertura = 40.0\\;mm",
+      "numeric_value": 40.0,
+      "is_assignment": true,
+      "variable_name": "cobertura",
+      "units": "mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "diametro_barra = 16 mm",
+      "id": "d0d10962805f495f916645e864496538",
+      "result": "16.00 mm",
+      "latex": "diametro_barra = 16.0\\;mm",
+      "numeric_value": 16.0,
+      "is_assignment": true,
+      "variable_name": "diametro_barra",
+      "units": "mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "phi = 0.65",
+      "id": "9cb818de96e64893a3d64b79f8fc8d9b",
+      "result": "0.650000000000000",
+      "latex": "phi = 0.65",
+      "numeric_value": 0.65,
+      "is_assignment": true,
+      "variable_name": "phi",
+      "units": null
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "beta1 = 0.85",
+      "id": "a96f8fb7830e4df1ae84e0f9e7a2e4ae",
+      "result": "0.850000000000000",
+      "latex": "beta1 = 0.85",
+      "numeric_value": 0.85,
+      "is_assignment": true,
+      "variable_name": "beta1",
+      "units": null
+    },
+    {
+      "type": "TextBlock",
+      "raw": "## Geometría derivada",
+      "id": "7d024686619643b4a0a00df74a25805e"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "As_total = 8 * (pi * diametro_barra**2 / 4)",
+      "id": "4450f13ec12a42aa9a2fd85af51acf8d",
+      "result": "1608.50 mm²",
+      "latex": "As_total = 2 \\cdot \\pi \\cdot diametro_{barra}^{2}\\;mm²",
+      "numeric_value": 1608.495438637974,
+      "is_assignment": true,
+      "variable_name": "As_total",
+      "units": "mm²"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "As_t = As_total / 2",
+      "id": "3680bc1d05ca43b7bec9e908beb51bc1",
+      "result": "804.25 mm²",
+      "latex": "As_t = \\frac{As_{total}}{2}\\;mm²",
+      "numeric_value": 804.247719318987,
+      "is_assignment": true,
+      "variable_name": "As_t",
+      "units": "mm²"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "As_c = As_total / 2",
+      "id": "3fc61d530ab644a1a5b4ec78f956f425",
+      "result": "804.25 mm²",
+      "latex": "As_c = \\frac{As_{total}}{2}\\;mm²",
+      "numeric_value": 804.247719318987,
+      "is_assignment": true,
+      "variable_name": "As_c",
+      "units": "mm²"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "d_t = h - cobertura - diametro_barra/2",
+      "id": "752f210ef16c401caaddd50c58085f9f",
+      "result": "452.00 mm",
+      "latex": "d_t = h - cobertura - \\frac{diametro_{barra}}{2}\\;mm",
+      "numeric_value": 452.0,
+      "is_assignment": true,
+      "variable_name": "d_t",
+      "units": "mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "d_c = cobertura + diametro_barra/2",
+      "id": "27ba45f6d97f4b968e4efbd23b3209f8",
+      "result": "48.00 mm",
+      "latex": "d_c = cobertura + \\frac{diametro_{barra}}{2}\\;mm",
+      "numeric_value": 48.0,
+      "is_assignment": true,
+      "variable_name": "d_c",
+      "units": "mm"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "## Punto 1: cercanía a tracción",
+      "id": "ccbfea15ec5849db908a535a89c06a4b"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "c1 = 60 mm",
+      "id": "f9fde204c50a41048e5cded1cf4120f2",
+      "result": "60.00 mm",
+      "latex": "c1 = 60.0\\;mm",
+      "numeric_value": 60.0,
+      "is_assignment": true,
+      "variable_name": "c1",
+      "units": "mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "a1 = beta1 * c1",
+      "id": "5f4eb9b603d9417e97460fc815333a12",
+      "result": "51.00 mm",
+      "latex": "a1 = \\beta_{1} \\cdot c_{1}\\;mm",
+      "numeric_value": 51.0,
+      "is_assignment": true,
+      "variable_name": "a1",
+      "units": "mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Cc1 = 0.85 * fc * b * a1",
+      "id": "9755ac63288045e9b2afb9ebc5f47999",
+      "result": "364.14 kPa*m²",
+      "latex": "Cc1 = 0.85 \\cdot fc \\cdot b \\cdot a_{1}\\;kPa*m²",
+      "numeric_value": 364.14,
+      "is_assignment": true,
+      "variable_name": "Cc1",
+      "units": "kPa*m²"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Cs1 = As_c * fy",
+      "id": "f143aca6f739443c9ff23d3e5c97112b",
+      "result": "337784.04 m²*Pa",
+      "latex": "Cs1 = As_{c} \\cdot fy\\;m²*Pa",
+      "numeric_value": 337784.0421139746,
+      "is_assignment": true,
+      "variable_name": "Cs1",
+      "units": "m²*Pa"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "T1 = As_t * fy",
+      "id": "67a24e868bc94b9e8ec93e215d8146c3",
+      "result": "337784.04 m²*Pa",
+      "latex": "T1 = As_{t} \\cdot fy\\;m²*Pa",
+      "numeric_value": 337784.0421139746,
+      "is_assignment": true,
+      "variable_name": "T1",
+      "units": "m²*Pa"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Pn1 = phi * (Cc1 + Cs1 - T1)",
+      "id": "ef2d1f85752344ed8eee7f06bfc397c5",
+      "result": "236.69 kPa*m²",
+      "latex": "Pn1 = \\phi \\cdot \\left(Cc_{1} + Cs_{1} - T_{1}\\right)\\;kPa*m²",
+      "numeric_value": 236.691,
+      "is_assignment": true,
+      "variable_name": "Pn1",
+      "units": "kPa*m²"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Mn1 = phi * (Cc1 * (d_t - a1/2) + Cs1 * d_c - T1 * d_t)",
+      "id": "5bb96548382c47b3b29aea1e590feda9",
+      "result": "12.25 kPa*m³",
+      "latex": "Mn1 = \\phi \\cdot \\left(Cc_{1} \\cdot \\left(d_{t} - \\frac{a_{1}}{2}\\right) + Cs_{1} \\cdot d_{c} - T_{1} \\cdot d_{t}\\right)\\;kPa*m³",
+      "numeric_value": 12.246622040870283,
+      "is_assignment": true,
+      "variable_name": "Mn1",
+      "units": "kPa*m³"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "## Punto 2: condición balanceada aproximada",
+      "id": "a3eee9456aa44b4bafa1ba5a7bfb0555"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "c_balance = d_t * (0.003 / (0.003 + fy/Es))",
+      "id": "55fbba4f7d8945bdb091e5f9c48deda8",
+      "result": "265.88 mm",
+      "latex": "c_balance = d_{t} \\cdot 0.003 \\cdot \\frac{1}{0.003 + \\frac{fy}{Es}}\\;mm",
+      "numeric_value": 265.88235294117646,
+      "is_assignment": true,
+      "variable_name": "c_balance",
+      "units": "mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "a2 = beta1 * c_balance",
+      "id": "8730ed7422804361864a101e942d1590",
+      "result": "226.00 mm",
+      "latex": "a2 = \\beta_{1} \\cdot c_{balance}\\;mm",
+      "numeric_value": 226.0,
+      "is_assignment": true,
+      "variable_name": "a2",
+      "units": "mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Cc2 = 0.85 * fc * b * a2",
+      "id": "edf305a919514bcab6196fd4c6ccdfc0",
+      "result": "1.61 MPa*m²",
+      "latex": "Cc2 = 0.85 \\cdot fc \\cdot b \\cdot a_{2}\\;MPa*m²",
+      "numeric_value": 1.61364,
+      "is_assignment": true,
+      "variable_name": "Cc2",
+      "units": "MPa*m²"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Cs2 = As_c * fy",
+      "id": "9bcd1232011a4db6b5dc43818be5102e",
+      "result": "337784.04 m²*Pa",
+      "latex": "Cs2 = As_{c} \\cdot fy\\;m²*Pa",
+      "numeric_value": 337784.0421139746,
+      "is_assignment": true,
+      "variable_name": "Cs2",
+      "units": "m²*Pa"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "T2 = As_t * fy",
+      "id": "1694378462b94893882b87f74c85d9b9",
+      "result": "337784.04 m²*Pa",
+      "latex": "T2 = As_{t} \\cdot fy\\;m²*Pa",
+      "numeric_value": 337784.0421139746,
+      "is_assignment": true,
+      "variable_name": "T2",
+      "units": "m²*Pa"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Pn2 = phi * (Cc2 + Cs2 - T2)",
+      "id": "4031dd35572c47e89e750fbc8a8373a8",
+      "result": "1.05 MPa*m²",
+      "latex": "Pn2 = \\phi \\cdot \\left(Cc_{2} + Cs_{2} - T_{2}\\right)\\;MPa*m²",
+      "numeric_value": 1.0488659999999999,
+      "is_assignment": true,
+      "variable_name": "Pn2",
+      "units": "MPa*m²"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Mn2 = phi * (Cc2 * (d_t - a2/2) + Cs2 * d_c - T2 * d_t)",
+      "id": "1a2ee1101dd741de9526ec9c1bd9dd95",
+      "result": "266.86 kPa*m³",
+      "latex": "Mn2 = \\phi \\cdot \\left(Cc_{2} \\cdot \\left(d_{t} - \\frac{a_{2}}{2}\\right) + Cs_{2} \\cdot d_{c} - T_{2} \\cdot d_{t}\\right)\\;kPa*m³",
+      "numeric_value": 266.8634845408703,
+      "is_assignment": true,
+      "variable_name": "Mn2",
+      "units": "kPa*m³"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "## Punto 3: control por compresión",
+      "id": "92bad8e3fd204275bf96ec46bd3e877f"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "c3 = 350 mm",
+      "id": "882e8f901d9e4a4ca2b9f1ac9d91d415",
+      "result": "350.00 mm",
+      "latex": "c3 = 350.0\\;mm",
+      "numeric_value": 350.0,
+      "is_assignment": true,
+      "variable_name": "c3",
+      "units": "mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "a3 = beta1 * c3",
+      "id": "fe53cf801d804d33b9d95056eee494bc",
+      "result": "297.50 mm",
+      "latex": "a3 = \\beta_{1} \\cdot c_{3}\\;mm",
+      "numeric_value": 297.5,
+      "is_assignment": true,
+      "variable_name": "a3",
+      "units": "mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Cc3 = 0.85 * fc * b * a3",
+      "id": "1a7a2d06a5ad4dc193a088913aaab13d",
+      "result": "2.12 MPa*m²",
+      "latex": "Cc3 = 0.85 \\cdot fc \\cdot b \\cdot a_{3}\\;MPa*m²",
+      "numeric_value": 2.1241499999999998,
+      "is_assignment": true,
+      "variable_name": "Cc3",
+      "units": "MPa*m²"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Cs3 = As_c * fy",
+      "id": "d43bda213017461d90a52fff41e2f30c",
+      "result": "337784.04 m²*Pa",
+      "latex": "Cs3 = As_{c} \\cdot fy\\;m²*Pa",
+      "numeric_value": 337784.0421139746,
+      "is_assignment": true,
+      "variable_name": "Cs3",
+      "units": "m²*Pa"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "T3 = As_t * fy",
+      "id": "f71c6d79e6464f6e875d53715ac70b15",
+      "result": "337784.04 m²*Pa",
+      "latex": "T3 = As_{t} \\cdot fy\\;m²*Pa",
+      "numeric_value": 337784.0421139746,
+      "is_assignment": true,
+      "variable_name": "T3",
+      "units": "m²*Pa"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Pn3 = phi * (Cc3 + Cs3 - T3)",
+      "id": "78588378e8c1449fb0272bc089263685",
+      "result": "1.38 MPa*m²",
+      "latex": "Pn3 = \\phi \\cdot \\left(Cc_{3} + Cs_{3} - T_{3}\\right)\\;MPa*m²",
+      "numeric_value": 1.3806975,
+      "is_assignment": true,
+      "variable_name": "Pn3",
+      "units": "MPa*m²"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Mn3 = phi * (Cc3 * (d_t - a3/2) + Cs3 * d_c - T3 * d_t)",
+      "id": "861d9817116346dd986aa01aed72609b",
+      "result": "329.99 kPa*m³",
+      "latex": "Mn3 = \\phi \\cdot \\left(Cc_{3} \\cdot \\left(d_{t} - \\frac{a_{3}}{2}\\right) + Cs_{3} \\cdot d_{c} - T_{3} \\cdot d_{t}\\right)\\;kPa*m³",
+      "numeric_value": 329.9944274158703,
+      "is_assignment": true,
+      "variable_name": "Mn3",
+      "units": "kPa*m³"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "## Conversión a kN y kN·m",
+      "id": "b9c017f586d641b0a7a4662fdec6e8f3"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Pn1_kN = Pn1.to(kN)",
+      "id": "813f144dc2d140eea648937099579cf7",
+      "result": "236.69 kN",
+      "latex": "Pn1_kN = Pn1.to(kN)",
+      "numeric_value": 236.691,
+      "is_assignment": true,
+      "variable_name": "Pn1_kN",
+      "units": "kN"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Mn1_kNm = Mn1.to(kN*m)",
+      "id": "7386105110c94b7ebdb19031961eb05b",
+      "result": "12.25 kN*m",
+      "latex": "Mn1_kNm = Mn1.to(kN*m)",
+      "numeric_value": 12.246622040870283,
+      "is_assignment": true,
+      "variable_name": "Mn1_kNm",
+      "units": "kN*m"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Pn2_kN = Pn2.to(kN)",
+      "id": "29c86c63981544bcb107b098184b6c07",
+      "result": "1.05 MN",
+      "latex": "Pn2_kN = Pn2.to(kN)",
+      "numeric_value": 1.048866,
+      "is_assignment": true,
+      "variable_name": "Pn2_kN",
+      "units": "MN"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Mn2_kNm = Mn2.to(kN*m)",
+      "id": "dd0500ed22e4447ba06dd216c15ae824",
+      "result": "266.86 kN*m",
+      "latex": "Mn2_kNm = Mn2.to(kN*m)",
+      "numeric_value": 266.8634845408703,
+      "is_assignment": true,
+      "variable_name": "Mn2_kNm",
+      "units": "kN*m"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Pn3_kN = Pn3.to(kN)",
+      "id": "5a1440385afa4071b6b1aa124b756aee",
+      "result": "1.38 MN",
+      "latex": "Pn3_kN = Pn3.to(kN)",
+      "numeric_value": 1.3806975,
+      "is_assignment": true,
+      "variable_name": "Pn3_kN",
+      "units": "MN"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Mn3_kNm = Mn3.to(kN*m)",
+      "id": "9871d429d879409890ae9b724218b248",
+      "result": "329.99 kN*m",
+      "latex": "Mn3_kNm = Mn3.to(kN*m)",
+      "numeric_value": 329.9944274158703,
+      "is_assignment": true,
+      "variable_name": "Mn3_kNm",
+      "units": "kN*m"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "Los pares (Pn, Mn) en kN y kN·m están dados por las variables *_kN y *_kNm arriba. Puedes copiar estos valores para graficar el diagrama.",
+      "id": "58d9e2b376944b4a914d52ce1451b06f"
+    }
+  ]
+}
