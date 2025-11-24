@@ -538,7 +538,8 @@ class FormulaBlock(Block):
                             self.sympy_expr = func_expr
 
                             # Create sympy lambda function
-                            sympy_lambda = sp.lambdify(param_symbols, func_expr, modules=['numpy', 'math'])
+                            # Use math module instead of numpy to avoid dependency issues
+                            sympy_lambda = sp.lambdify(param_symbols, func_expr, modules='math')
 
                             # Register function
                             context.register_function(func_name, params, rhs, sympy_lambda)
