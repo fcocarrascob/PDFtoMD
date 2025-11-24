@@ -8,6 +8,7 @@ from PySide6.QtCore import Qt, QSettings, QTimer
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QHBoxLayout,
+    QGridLayout,
     QComboBox,
     QFileDialog,
     QInputDialog,
@@ -53,14 +54,17 @@ class NotebookTab(QWidget):
         self._seed_document()
 
     def _setup_ui(self) -> None:
-        """Create layout with controls, editor, and preview."""
+        """Create layout with controls, editor, preview, and toolbar."""
+
         splitter = QSplitter(Qt.Orientation.Horizontal)
 
-        # Left column: block list and buttons
+        # Left column: controls + lists + editor
         left_panel = QWidget()
         left_layout = QVBoxLayout(left_panel)
-        left_layout.setContentsMargins(4, 4, 4, 4)
+        left_layout.setContentsMargins(6, 6, 6, 6)
+        left_layout.setSpacing(6)
 
+        # Controls rows
         add_text_btn = QPushButton("Add Text Block")
         add_text_btn.clicked.connect(self.add_text_block)
         add_formula_btn = QPushButton("Add Formula Block")
@@ -68,16 +72,10 @@ class NotebookTab(QWidget):
         delete_btn = QPushButton("Delete Selected")
         delete_btn.clicked.connect(self.delete_selected_block)
 
-        export_html_btn = QPushButton("Export HTML")
-        export_html_btn.clicked.connect(self.export_html)
-        export_md_btn = QPushButton("Export Markdown")
-        export_md_btn.clicked.connect(self.export_markdown)
-
         move_up_btn = QPushButton("Move Up")
         move_up_btn.clicked.connect(lambda: self.move_selected_block(-1))
         move_down_btn = QPushButton("Move Down")
         move_down_btn.clicked.connect(lambda: self.move_selected_block(1))
-
         undo_btn = QPushButton("Undo")
         undo_btn.clicked.connect(self.undo_action)
         redo_btn = QPushButton("Redo")
@@ -87,47 +85,66 @@ class NotebookTab(QWidget):
         save_btn.clicked.connect(self.save_document)
         load_btn = QPushButton("Load Notebook")
         load_btn.clicked.connect(self.load_document)
+        export_html_btn = QPushButton("Export HTML")
+        export_html_btn.clicked.connect(self.export_html)
+        export_md_btn = QPushButton("Export Markdown")
+        export_md_btn.clicked.connect(self.export_markdown)
 
-        left_layout.addWidget(add_text_btn)
-        left_layout.addWidget(add_formula_btn)
-        left_layout.addWidget(delete_btn)
-        left_layout.addWidget(export_html_btn)
-        left_layout.addWidget(export_md_btn)
-        left_layout.addWidget(move_up_btn)
-        left_layout.addWidget(move_down_btn)
-        left_layout.addWidget(undo_btn)
-        left_layout.addWidget(redo_btn)
-        left_layout.addWidget(save_btn)
-        left_layout.addWidget(load_btn)
+        row1 = QHBoxLayout()
+        for btn in (add_text_btn, add_formula_btn, delete_btn, move_up_btn, move_down_btn):
+            row1.addWidget(btn)
+        row1.addStretch()
+
+        row2 = QHBoxLayout()
+        for btn in (undo_btn, redo_btn, save_btn, load_btn, export_html_btn, export_md_btn):
+            row2.addWidget(btn)
+        row2.addStretch()
+
+        left_layout.addLayout(row1)
+        left_layout.addLayout(row2)
+
+        # Lists
+        block_list_label = QLabel("Blocks (id/type)")
+        left_layout.addWidget(block_list_label)
         left_layout.addWidget(self.block_list, 1)
-
-        # Right column: editor + preview stacked vertically
-        right_panel = QWidget()
-        right_layout = QVBoxLayout(right_panel)
-        right_layout.setContentsMargins(4, 4, 4, 4)
-
-        right_layout.addWidget(self._build_toolbar())
 
         stack_label = QLabel("Blocks (raw)")
         stack_label.setToolTip("Each block shown in order; use keyboard shortcuts A/B/T/F, DD, Shift+Enter.")
-        right_layout.addWidget(stack_label)
+        left_layout.addWidget(stack_label)
         self.block_stack.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
         self.block_stack.setAlternatingRowColors(True)
-        right_layout.addWidget(self.block_stack, 1)
+        left_layout.addWidget(self.block_stack, 1)
 
+        # Editor
         self.editor.setPlaceholderText("Enter text or a SymPy-friendly expression (use * for multiplication: 3*a, 2*d)...")
-        right_layout.addWidget(self.editor, 1)
+        left_layout.addWidget(self.editor, 1)
         self.hint_label.setStyleSheet("color: #f7c6c5; font-size: 11px;")
-        right_layout.addWidget(self.hint_label)
-        right_layout.addWidget(self.preview, 2)
+        left_layout.addWidget(self.hint_label)
+
+        # Center column: preview
+        center_panel = QWidget()
+        center_layout = QVBoxLayout(center_panel)
+        center_layout.setContentsMargins(6, 6, 6, 6)
+        center_layout.setSpacing(6)
+        center_layout.addWidget(self.preview, 1)
+
+        # Right column: toolbar
+        right_panel = QWidget()
+        right_layout = QVBoxLayout(right_panel)
+        right_layout.setContentsMargins(6, 6, 6, 6)
+        right_layout.setSpacing(6)
+        right_layout.addWidget(self._build_toolbar())
+        right_layout.addStretch()
 
         splitter.addWidget(left_panel)
+        splitter.addWidget(center_panel)
         splitter.addWidget(right_panel)
-        splitter.setStretchFactor(1, 2)
+        splitter.setStretchFactor(0, 4)
+        splitter.setStretchFactor(1, 3)
+        splitter.setStretchFactor(2, 1)
 
         main_layout = QHBoxLayout(self)
         main_layout.addWidget(splitter)
-
     def _connect_signals(self) -> None:
         self.block_list.currentItemChanged.connect(self.on_block_selected)
         self.block_stack.currentItemChanged.connect(self.on_stack_selected)
@@ -462,37 +479,43 @@ class NotebookTab(QWidget):
 
     # Toolbar helpers
     def _build_toolbar(self) -> QWidget:
-        """Create a small toolbar with math operators and unit picker."""
+        """Create a vertical toolbar grouped by function type, 4 columns per group."""
 
         container = QWidget()
-        layout = QHBoxLayout(container)
-        layout.setContentsMargins(0, 0, 0, 4)
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(6)
+        container.setMinimumWidth(240)
 
-        def _add_btn(label: str, snippet: str, tip: str | None = None) -> None:
-            btn = QToolButton()
-            btn.setText(label)
-            btn.setToolTip(tip or f"Insert {label}")
-            btn.clicked.connect(lambda _=False, s=snippet: self.insert_snippet(s))
-            layout.addWidget(btn)
+        def _add_group(title: str, items: list[tuple[str, str]]) -> None:
+            lbl = QLabel(title)
+            lbl.setStyleSheet("font-weight: bold; margin-top: 4px;")
+            layout.addWidget(lbl)
+            grid_widget = QWidget()
+            grid = QGridLayout(grid_widget)
+            grid.setContentsMargins(0, 0, 0, 0)
+            grid.setSpacing(4)
+            for idx, (label, snippet) in enumerate(items):
+                btn = QToolButton()
+                btn.setText(label)
+                btn.setToolTip(f"Insert {label}")
+                btn.clicked.connect(lambda _=False, s=snippet: self.insert_snippet(s))
+                row, col = divmod(idx, 4)
+                grid.addWidget(btn, row, col)
+            layout.addWidget(grid_widget)
 
-        # Operadores b?sicos
-        ops = [
+        _add_group("Operadores", [
             ("+", " + "),
             ("-", " - "),
-            ("×", " * "),
-            ("÷", " / "),
+            ("*", " * "),
+            ("/", " / "),
             ("^", " ** "),
-            ("√", "sqrt()"),
-            ("·", " ⋅ "),  # middle dot for multiplication
-            ("≈", " ≈ "),
-        ]
-        for label, snippet in ops:
-            _add_btn(label, snippet)
+            ("sqrt", "sqrt()"),
+            ("?", " \u22c5 "),
+            ("?", " \u2248 "),
+        ])
 
-        layout.addSpacing(8)
-
-        # Funciones matem?ticas
-        math_funcs = [
+        _add_group("Funciones", [
             ("sin", "sin()"),
             ("cos", "cos()"),
             ("tan", "tan()"),
@@ -500,73 +523,50 @@ class NotebookTab(QWidget):
             ("log", "log()"),
             ("pi", "pi"),
             ("abs", "abs()"),
-        ]
-        for label, snippet in math_funcs:
-            _add_btn(label, snippet)
+        ])
 
-        layout.addSpacing(8)
-
-        # Agregados y listas
-        agg_funcs = [
+        _add_group("Agregados", [
             ("sum", "sum()"),
             ("min", "min()"),
             ("max", "max()"),
             ("range", "range()"),
-        ]
-        for label, snippet in agg_funcs:
-            _add_btn(label, snippet)
+        ])
 
-        layout.addSpacing(8)
-
-        # Arrays y barridos
-        array_funcs = [
+        _add_group("Arrays", [
             ("linspace", "linspace( , , )"),
             ("arange", "arange( , , )"),
             ("sweep", "sweep(f, xs)"),
-        ]
-        for label, snippet in array_funcs:
-            _add_btn(label, snippet, tip=f"Insert {label}")
+        ])
 
-        layout.addSpacing(8)
+        _add_group("Definir f(x)", [
+            ("f(x)", "f(x) = "),
+        ])
 
-        # Function definition button
-        func_btn = QToolButton()
-        func_btn.setText("f(x)")
-        func_btn.setToolTip("Insert function definition template")
-        func_btn.clicked.connect(lambda: self.insert_snippet("f(x) = "))
-        layout.addWidget(func_btn)
+        _add_group("LaTeX", [
+            ("Inline $", "$ $"),
+            ("Frac", "\frac{}{}"),
+            ("Sqrt", "\sqrt{}"),
+            ("Sub", "x_{}"),
+            ("Sup", "x^{}"),
+        ])
 
-        layout.addSpacing(8)
-
-        # Quick LaTeX snippets for text/fmla blocks
-        latex_snippets = [
-            ("Inline $", "$?$"),
-            ("Frac", "\frac{?}{?}"),
-            ("Sqrt", "\sqrt{?}"),
-            ("Sub", "x_{?}"),
-            ("Sup", "x^{?}"),
-        ]
-        for label, snippet in latex_snippets:
-            _add_btn(label, snippet, tip=f"Insert {snippet}")
-
-        layout.addSpacing(8)
-
-        # Greek symbols quick pick
+        greek_label = QLabel("Greek")
+        greek_label.setStyleSheet("font-weight: bold; margin-top: 4px;")
+        layout.addWidget(greek_label)
         self.greek_combo = QComboBox()
-        greek_items = ["\alpha", "\beta", "\gamma", "\delta", "\phi", "\theta", "\lambda", "\pi", "\sigma", "\omega"]
+        greek_items = [r"\alpha", r"\beta", r"\gamma", r"\delta", r"\phi", r"\theta", r"\lambda", r"\pi", r"\sigma", r"\omega"]
         self.greek_combo.addItems(greek_items)
         self.greek_combo.setToolTip("Insert Greek symbol (LaTeX)")
-
         greek_btn = QToolButton()
-        greek_btn.setText("Greek")
+        greek_btn.setText("Insert")
         greek_btn.setToolTip("Insert selected Greek symbol")
         greek_btn.clicked.connect(lambda: self.insert_snippet(self.greek_combo.currentText()))
-
         layout.addWidget(self.greek_combo)
         layout.addWidget(greek_btn)
 
         layout.addStretch()
         return container
+
     def insert_snippet(self, text: str) -> None:
         """Insert a math snippet at the current cursor position."""
 
