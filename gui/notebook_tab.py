@@ -5,7 +5,14 @@ import os
 import re
 
 from PySide6.QtCore import Qt, QSettings, QTimer
-from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtGui import (
+    QKeySequence,
+    QShortcut,
+    QSyntaxHighlighter,
+    QTextCharFormat,
+    QColor,
+    QFont,
+)
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QGridLayout,
@@ -30,6 +37,48 @@ from notebook.document import Block, Document, FormulaBlock, NotebookOptions, Te
 from notebook.renderer import NotebookRenderer
 
 
+class ParenthesisHighlighter(QSyntaxHighlighter):
+    """Colors matching parentheses based on nesting depth for formulas."""
+
+    def __init__(self, document):
+        super().__init__(document)
+        self.enabled = False
+        self.palette = [
+            QColor("#2a82da"),
+            QColor("#e67e22"),
+            QColor("#27ae60"),
+            QColor("#9b59b6"),
+            QColor("#d35400"),
+            QColor("#16a085"),
+            QColor("#c0392b"),
+            QColor("#8e44ad"),
+            QColor("#2980b9"),
+            QColor("#f1c40f"),
+        ]
+
+    def highlightBlock(self, text: str) -> None:  # noqa: N802
+        if not self.enabled:
+            return
+
+        depth = self.previousBlockState()
+        depth = 0 if depth < 0 else depth
+        fmt = QTextCharFormat()
+
+        for i, ch in enumerate(text):
+            if ch == "(":
+                color = self.palette[depth % len(self.palette)]
+                fmt.setForeground(color)
+                self.setFormat(i, 1, fmt)
+                depth += 1
+            elif ch == ")":
+                depth = max(depth - 1, 0)
+                color = self.palette[depth % len(self.palette)]
+                fmt.setForeground(color)
+                self.setFormat(i, 1, fmt)
+
+        self.setCurrentBlockState(depth)
+
+
 class NotebookTab(QWidget):
     """Simple calculation notebook UI with block list, editor, and preview."""
 
@@ -37,6 +86,7 @@ class NotebookTab(QWidget):
         super().__init__(parent)
         self.document = Document()
         self.renderer = NotebookRenderer()
+        self.paren_highlighter = None
 
         self.settings = getattr(parent, "settings", QSettings("MyCompany", "PDFtoMD"))
 
@@ -128,7 +178,12 @@ class NotebookTab(QWidget):
         left_layout.addWidget(self.block_stack, 1)
 
         self.editor.setPlaceholderText("Enter text or a SymPy-friendly expression (use * for multiplication: 3*a, 2*d)...")
+        font = QFont()
+        font.setPointSize(15)
+        font.setBold(True)
+        self.editor.setFont(font)
         left_layout.addWidget(self.editor, 1)
+        self.paren_highlighter = ParenthesisHighlighter(self.editor.document())
         self.hint_label.setStyleSheet("color: #f7c6c5; font-size: 11px;")
         left_layout.addWidget(self.hint_label)
 
@@ -375,6 +430,9 @@ class NotebookTab(QWidget):
         self.editor.blockSignals(True)
         self.editor.setPlainText(block.raw)
         self.editor.blockSignals(False)
+        if self.paren_highlighter:
+            self.paren_highlighter.enabled = isinstance(block, FormulaBlock)
+            self.paren_highlighter.rehighlight()
 
     def _update_stack_item(self, row: int) -> None:
         """Refresh the stacked/raw list label for a single row without rebuilding all items."""
@@ -557,6 +615,11 @@ class NotebookTab(QWidget):
             ("linspace", "linspace( , , )"),
             ("arange", "arange( , , )"),
             ("sweep", "sweep(f, xs)"),
+        ])
+
+        _add_group("Condicionales", [
+            ("if/else", "(a) if (condicion) else (b)"),
+            ("if/elif/else", "(a) if (cond1) else ((b) if (cond2) else (c))"),
         ])
 
         _add_group("Definir f(x)", [

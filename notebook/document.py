@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import html
+import ast
 import re
 from functools import cached_property
 from dataclasses import dataclass, field
@@ -347,11 +348,42 @@ class FormulaBlock(Block):
         return self._safe_sympify(rhs, context)
 
     @staticmethod
-    def _safe_sympify(expression: str, context: EvaluationContext) -> sp.Expr:
+    def _parse_conditional_expr(expression: str, context: EvaluationContext) -> Optional[sp.Expr]:
+        """Convert Python inline conditionals into a SymPy Piecewise expression."""
+
+        try:
+            tree = ast.parse(expression, mode="eval")
+        except SyntaxError:
+            return None
+
+        if not any(isinstance(node, ast.IfExp) for node in ast.walk(tree)):
+            return None
+
+        def _convert(node):
+            if isinstance(node, ast.IfExp):
+                test = _convert(node.test)
+                body = _convert(node.body)
+                orelse = _convert(node.orelse)
+                return sp.Piecewise((body, test), (orelse, True))
+            src = ast.get_source_segment(expression, node) or ast.unparse(node)
+            normalized = FormulaBlock._normalize_expression(src)
+            return FormulaBlock._safe_sympify(normalized, context, allow_conditional=False)
+
+        return _convert(tree.body)
+
+    @staticmethod
+    def _safe_sympify(expression: str, context: EvaluationContext, *, allow_conditional: bool = True) -> sp.Expr:
         """Sympify while avoiding accidental symbol injection for numeric-only inputs."""
 
-        expr = FormulaBlock._normalize_expression(expression)
-        if re.search(r"[A-Za-z]", expression):
+        expr = expression.strip()
+
+        if allow_conditional and " if " in expr and " else " in expr:
+            piecewise_expr = FormulaBlock._parse_conditional_expr(expr, context)
+            if piecewise_expr is not None:
+                return piecewise_expr
+
+        expr = FormulaBlock._normalize_expression(expr)
+        if re.search(r"[A-Za-z]", expr):
             # Prefer SymPy math helpers so names like ``sqrt`` resolve to functions,
             # while still letting the SymbolRegistry lazily create new symbols.
             safe_locals = {

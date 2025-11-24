@@ -258,6 +258,22 @@
     },
     {
       "type": "TextBlock",
+      "raw": "### 3.6 Condicionales (if/elif/else)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "x_cond = -3"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "resultado_cond = 10 if x_cond > 0 else -5"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "signo = (1) if (x_cond > 0) else ((-1) if (x_cond < 0) else (0))"
+    },
+    {
+      "type": "TextBlock",
       "raw": "## Verificaci?n Final\n\nSi todas las evaluaciones funcionan correctamente, deber?as ver:\n- Tabla **Functions** con las funciones definidas (f, area\\_{rectangulo}, g, h, cuadrado, doble, compuesta, momento\\_{inercia}, f\\_{lineal})\n- Tabla **Arrays** con todos los arrays (arr1 a arr10, arr\\_{un\\_elemento}, arr\\_{dos\\_elementos}, alturas, xs\\_{sweep}, ys\\_{sweep})\n- Tabla **Variables** con los resultados y constantes"
     }
   ]
