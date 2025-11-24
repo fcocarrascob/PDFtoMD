@@ -39,6 +39,13 @@ Aplicación de escritorio en PySide6 que combina dos pestañas:
 - Previsualización HTML con MathJax y tabla de variables evaluadas.
 - Barra de atajos para insertar operadores y unidades comunes.
 
+### Render y unidades
+- MathJax soporta inline (`$...$`) y bloque (`$$...$$`); exporta con CDN o bundle local (configurable en Settings) y formato A4 claro.
+- Todas las fórmulas se evalúan de arriba hacia abajo en un contexto compartido (SymPy + pint). Si el valor se obtiene con pint, se reparsea para obtener LaTeX y se anotan advertencias de parse si algo falla.
+- Las multiplicaciones se muestran con `·` entre números y símbolos (`mul_symbol="\cdot"`), eliminando casos como `fcb`.
+- Las unidades se mantienen al final de la expresión; se evita duplicarlas si ya aparecen en el LaTeX.
+- Los errores de unidades/parseo se muestran en el panel de errores, pero el resto de los bloques sigue evaluando.
+
 ## TODO / posibles mejoras
 - Añadir conversión/selección de unidades personalizada en la UI (combo editable + `to(<unit>)`).
 - Permitir no simplificar unidades (ej. mantener MPa·mm) según preferencia de usuario.
@@ -46,3 +53,15 @@ Aplicación de escritorio en PySide6 que combina dos pestañas:
 - Validaciones y mensajes de error más claros en fórmulas con unidades inválidas.
 - Tests automatizados adicionales para casos mixtos (potencias, divisiones con unidades, conversiones).
 - Configuración persistente de la barra de unidades (lista editable por usuario).
+
+## Pipeline de evaluación/render en el notebook
+- Entrada: bloques de texto (Markdown) y fórmulas (expresiones SymPy-friendly, con unidades opcionales).
+- Evaluación:
+  - Se comparte un `EvaluationContext` con valores numéricos, cantidades pint y símbolos.
+  - Si una asignación incluye unidades o una expresión produce cantidades, se evalúa con pint; el valor numérico y unidades se normalizan (y pueden convertir a una unidad objetivo).
+  - En paralelo se intenta generar un `sympy_expr` para render. Si el parse inicial falla, se reintenta un parse tolerante (`sympify(..., evaluate=False)`) para obtener siempre LaTeX; los fallos de parse se anotan como advertencias.
+  - Errores de unidades o parseo se muestran en el panel de errores, pero los demás bloques siguen evaluando.
+- Render:
+  - LaTeX se genera desde `sympy_expr` cuando existe; si no, se usa un fallback del texto crudo.
+  - MathJax renderiza inline (`$...$`) y bloque (`$$...$$`); la exportación HTML incluye MathJax (CDN o bundle local) y puede ocultar el panel de logs según preferencias.
+  - El HTML se estiliza con tema claro y layout tipo página A4; la tabla de variables muestra nombre, expresión, valor y unidades.

@@ -348,6 +348,23 @@ class FormulaBlock(Block):
         expr = self._normalize_expression(expression).replace("^", "**")
         try:
             return eval(expr, {"__builtins__": {}}, env), None  # pylint: disable=eval-used
+        except NameError as exc:
+            # Retry once injecting all known numbers/quantities explicitly.
+            for name, value in context.numeric_values.items():
+                env[name] = value
+            for name, qty in context.quantities.items():
+                env[name] = qty
+            try:
+                return eval(expr, {"__builtins__": {}}, env), None  # pylint: disable=eval-used
+            except Exception as exc2:  # pylint: disable=broad-except
+                # Last fallback: try SymPy numeric evaluation with substitutions
+                try:
+                    sym_expr = self._safe_sympify(expression, context)
+                    substituted = sym_expr.subs(context.numeric_values)
+                    numeric = sp.N(substituted)
+                    return numeric, None
+                except Exception as exc3:  # pylint: disable=broad-except
+                    return None, exc3
         except Exception as exc:
             return None, exc
 
@@ -405,10 +422,64 @@ class FormulaBlock(Block):
         return all(re.search(rf"(?<![A-Za-z]){re.escape(token)}(?![A-Za-z])", latex_expr) for token in tokens)
 
     @staticmethod
+    def _cleanup_latex(latex_expr: str) -> str:
+        """Tidy up common artifacts in LaTeX output."""
+
+        # Remove redundant leading "1 " before a fraction (e.g., "1 \\frac{1}{...}")
+        latex_expr = re.sub(r"^1\s*(\\frac)", r"\\frac", latex_expr)
+        # Normalize \cdot spacing
+        latex_expr = latex_expr.replace("\\cdot", "\\cdot ")
+        latex_expr = re.sub(r"^1\s*\\cdot\s*", "", latex_expr)
+        latex_expr = re.sub(r"\s{2,}", " ", latex_expr)
+        latex_expr = latex_expr.strip()
+        return latex_expr
+
+    @staticmethod
     def _latex_mentions_common_unit(latex_expr: str) -> bool:
         """Heuristic: detect if any known unit symbol already appears in the LaTeX."""
 
         return any(re.search(rf"(?<![A-Za-z]){re.escape(unit)}(?![A-Za-z])", latex_expr) for unit in COMMON_UNITS)
+
+    def _ensure_sympy_expr(self, expression: str, context: EvaluationContext) -> None:
+        """Guarantee a sympy_expr for rendering, even when pint handled evaluation."""
+
+        if self.sympy_expr is not None:
+            return
+        try:
+            self.sympy_expr = self._safe_sympify(expression, context)
+            return
+        except Exception as exc:
+            last_exc = exc
+        try:
+            # Try a non-evaluating sympify with a sanitized locals dict (no SymbolRegistry side effects).
+            locals_env = dict(context.symbols)
+            locals_env.update(
+                {
+                    "Symbol": sp.Symbol,
+                    "Integer": sp.Integer,
+                    "Float": sp.Float,
+                    "Rational": sp.Rational,
+                }
+            )
+            for unit_name in COMMON_UNITS:
+                locals_env.setdefault(unit_name, sp.Symbol(unit_name))
+            self.sympy_expr = sp.sympify(expression, locals=locals_env, evaluate=False)
+            return
+        except Exception as exc:  # pylint: disable=broad-except
+            last_exc = exc
+        try:
+            # Last resort: parse without locals just to get LaTeX for render.
+            self.sympy_expr = parse_expr(
+                self._normalize_expression(expression), transformations=standard_transformations
+            )
+            return
+        except Exception as exc:  # pylint: disable=broad-except
+            self.sympy_expr = None
+            context.register_error(
+                block_id=self.block_id,
+                message=f"Render parse failed for '{expression}': {exc or last_exc}",
+                error_type="ParseWarning",
+            )
 
     def _handle_unit_error(
         self,
@@ -528,6 +599,7 @@ class FormulaBlock(Block):
                             self.numeric_value = magnitude
                             self.units = normalized_units
                             self.result = f"{self._format_numeric_value(magnitude)} {normalized_units}"
+                            self._ensure_sympy_expr(rhs, context)
                         else:
                             substitution = self.sympy_expr.subs(context.numeric_values)
                             evaluated = sp.N(substitution)
@@ -536,10 +608,13 @@ class FormulaBlock(Block):
                                     self.numeric_value = float(evaluated)
                                 except (TypeError, ValueError):
                                     self.numeric_value = None
-                            self.result = str(evaluated)
+                                self.result = str(evaluated)
                     expr_latex = (
-                        sp.latex(self.sympy_expr, order="none") if self.sympy_expr is not None else html.escape(rhs)
+                        sp.latex(self.sympy_expr, order="none", mul_symbol=" \\cdot ")
+                        if self.sympy_expr is not None
+                        else html.escape(rhs)
                     )
+                    expr_latex = self._cleanup_latex(expr_latex)
                     display_latex = expr_latex
                     if self.units:
                         already_has_units = self._latex_contains_unit_tokens(expr_latex, self.units)
@@ -581,6 +656,7 @@ class FormulaBlock(Block):
                 self.numeric_value = magnitude
                 self.units = normalized_units
                 self.result = f"{self._format_numeric_value(magnitude)} {normalized_units}"
+                self._ensure_sympy_expr(raw, context)
             else:
                 substitution = self.sympy_expr.subs(context.numeric_values)
                 evaluated = sp.N(substitution)
@@ -590,7 +666,8 @@ class FormulaBlock(Block):
                         self.numeric_value = float(evaluated)
                     except (TypeError, ValueError):
                         self.numeric_value = None
-            self.latex = sp.latex(self.sympy_expr, order="none")
+            self.latex = sp.latex(self.sympy_expr, order="none", mul_symbol=" \\cdot ")
+            self.latex = self._cleanup_latex(self.latex)
         except Exception as exc:  # pylint: disable=broad-except
             # Keep evaluation errors but continue showing them in the UI.
             self.sympy_expr = None
@@ -618,7 +695,7 @@ class FormulaBlock(Block):
             )
 
     def to_html(self) -> str:
-        if self.sympy_expr is None and self.result is None:
+        if self.sympy_expr is None or (self.latex is None and self.result is None):
             self.evaluate()
 
         latex_expr = self.latex or html.escape(self.raw)
