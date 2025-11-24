@@ -1,0 +1,138 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='utf-8'>
+            
+        <script>
+        window.MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$','$$'], ['\\[','\\]']]
+          },
+          options: {
+            skipHtmlTags: ['script','noscript','style','textarea','pre','code']
+          }
+        };
+        </script>
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+            <style>
+                
+            @page {
+                size: A4;
+                margin: 12mm;
+            }
+            body {
+                font-family: Arial, sans-serif;
+                padding: 24px;
+                background: #eceff4;
+                color: #1f1f1f;
+                display: flex;
+                justify-content: center;
+            }
+            .page {
+                background: #f7f8fa;
+                color: #1f1f1f;
+                max-width: 210mm;
+                min-height: 297mm;
+                width: 100%;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+                border: 1px solid #e5e8ee;
+                border-radius: 6px;
+                padding: 24px;
+                box-sizing: border-box;
+            }
+            .text-block { margin-bottom: 12px; line-height: 1.5; }
+            .text-block h1, .text-block h2, .text-block h3, .text-block h4, .text-block h5, .text-block h6 {
+                margin: 0 0 8px 0;
+                font-weight: 700;
+                color: #2a82da;
+            }
+            .text-block ul, .text-block ol {
+                padding-left: 20px;
+                margin: 6px 0 12px 0;
+            }
+            .text-block li { margin-bottom: 4px; }
+            .text-block code {
+                background: #ffffff;
+                border: 1px solid #dbe1ea;
+                padding: 2px 4px;
+                border-radius: 4px;
+                font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            }
+            .formula-block { margin-bottom: 16px; padding: 12px; background: #ffffff; border-radius: 6px; border: 1px solid #dbe1ea; }
+            .formula-block.error { border-color: #d9534f; background: #fdecea; }
+            .formula-input { font-size: 18px; margin-bottom: 6px; }
+            .formula-result { color: #2a82da; font-weight: bold; }
+            .formula-block.error .formula-result { color: #d9534f; }
+            .variable-table { margin-top: 24px; background: #ffffff; padding: 12px; border-radius: 6px; border: 1px solid #dbe1ea; }
+            .variable-table h3 { margin-top: 0; }
+            .variable-table table { width: 100%; border-collapse: collapse; }
+            .variable-table th, .variable-table td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #dbe1ea; }
+            .variable-table th { color: #1f1f1f; opacity: 0.8; }
+            .error-panel, .log-panel { margin-top: 16px; background: #ffffff; padding: 12px; border-radius: 6px; border: 1px solid #dbe1ea; }
+            .error-panel h3 { margin-top: 0; color: #d9534f; }
+            .log-panel h3 { margin-top: 0; color: #2a82da; }
+            .error-panel ul { padding-left: 18px; margin: 8px 0; }
+            .error-panel li { margin-bottom: 6px; }
+            .log-panel table { width: 100%; border-collapse: collapse; }
+            .log-panel th, .log-panel td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #dbe1ea; }
+            .log-panel th { color: #1f1f1f; opacity: 0.8; }
+        
+            </style>
+        </head>
+        <body>
+            <div class='page'>
+                <div class='text-block'><h1>Ejemplo de diagrama P-M con compatibilidad de deformaciones</h1>
+<p>Columna rectangular de hormigon armado (ACI 318): calculo de puntos usando phi variable, esfuerzos de acero por deformacion y limite de carga axial.</p>
+</div>
+<div class='text-block'><h2>Propiedades basicas</h2>
+</div>
+<div class='formula-block'><div class='formula-input'>$$ fc = 28.0\;MPa $$</div><div class='formula-result'>= 28.00 MPa</div></div>
+<div class='formula-block'><div class='formula-input'>$$ fy = 420.0\;MPa $$</div><div class='formula-result'>= 420.00 MPa</div></div>
+<div class='formula-block'><div class='formula-input'>$$ Es = 200000.0\;MPa $$</div><div class='formula-result'>= 200000.00 MPa</div></div>
+<div class='formula-block'><div class='formula-input'>$$ b = 300.0\;mm $$</div><div class='formula-result'>= 300.00 mm</div></div>
+<div class='formula-block'><div class='formula-input'>$$ h = 500.0\;mm $$</div><div class='formula-result'>= 500.00 mm</div></div>
+<div class='formula-block'><div class='formula-input'>$$ cobertura = 40.0\;mm $$</div><div class='formula-result'>= 40.00 mm</div></div>
+<div class='formula-block'><div class='formula-input'>$$ diametro_barra = 16.0\;mm $$</div><div class='formula-result'>= 16.00 mm</div></div>
+<div class='formula-block'><div class='formula-input'>$$ beta1 = 0.85 $$</div><div class='formula-result'>= 0.850000000000000</div></div>
+<div class='formula-block'><div class='formula-input'>$$ eps_cu = 0.003 $$</div><div class='formula-result'>= 0.00300000000000000</div></div>
+<div class='formula-block'><div class='formula-input'>$$ eps_y = \frac{fy}{Es} $$</div><div class='formula-result'>= 0.00 </div></div>
+<div class='text-block'><h2>Geometria derivada y area de acero</h2>
+</div>
+<div class='formula-block'><div class='formula-input'>$$ As_total = 2 \cdot \pi \cdot diametro_{barra}^{2}\;mm² $$</div><div class='formula-result'>= 1608.50 mm²</div></div>
+<div class='formula-block'><div class='formula-input'>$$ As_t = \frac{As_{total}}{2}\;mm² $$</div><div class='formula-result'>= 804.25 mm²</div></div>
+<div class='formula-block'><div class='formula-input'>$$ As_c = \frac{As_{total}}{2}\;mm² $$</div><div class='formula-result'>= 804.25 mm²</div></div>
+<div class='formula-block'><div class='formula-input'>$$ d_t = h - cobertura - \frac{diametro_{barra}}{2}\;mm $$</div><div class='formula-result'>= 452.00 mm</div></div>
+<div class='formula-block'><div class='formula-input'>$$ d_c = cobertura + \frac{diametro_{barra}}{2}\;mm $$</div><div class='formula-result'>= 48.00 mm</div></div>
+<div class='formula-block'><div class='formula-input'>$$ P0 = 0.85 \cdot fc \cdot \left(b \cdot h - As_{total}\right) + fy \cdot As_{total}\;MPa*mm² $$</div><div class='formula-result'>= 4207285.89 MPa*mm²</div></div>
+<div class='formula-block'><div class='formula-input'>$$ Pn_cap = 0.8 \cdot 0.65 \cdot P_{0}\;MPa*mm² $$</div><div class='formula-result'>= 2187788.66 MPa*mm²</div></div>
+<div class='text-block'><h2>Funciones de deformacion, esfuerzo y phi</h2>
+</div>
+<div class='formula-block'><div class='formula-input'>$$ eps_t(c) = \frac{eps_{cu} \cdot \left(d_{t} - c\right)}{c} $$</div><div class='formula-result'>= function</div></div>
+<div class='formula-block'><div class='formula-input'>$$ eps_c(c) = \frac{eps_{cu} \cdot \left(c - d_{c}\right)}{c} $$</div><div class='formula-result'>= function</div></div>
+<div class='formula-block'><div class='formula-input'>$$ fs_t(c) = clamp(Es * eps_t(c), -fy, fy) $$</div><div class='formula-result'>= function</div></div>
+<div class='formula-block'><div class='formula-input'>$$ fs_c(c) = clamp(Es * eps_c(c), -fy, fy) $$</div><div class='formula-result'>= function</div></div>
+<div class='formula-block'><div class='formula-input'>$$ phi(c) = clamp(0.65 + (0.25/0.003) * (eps_t(c) - 0.002), 0.65, 0.9) $$</div><div class='formula-result'>= function</div></div>
+<div class='formula-block'><div class='formula-input'>$$ a(c) = \beta_{1} \cdot c $$</div><div class='formula-result'>= function</div></div>
+<div class='formula-block'><div class='formula-input'>$$ Cc(c) = 0.85 * fc * b * a(c) $$</div><div class='formula-result'>= function</div></div>
+<div class='formula-block'><div class='formula-input'>$$ Cs(c) = As_{c} \cdot \operatorname{fs}_{c}{\left(c \right)} $$</div><div class='formula-result'>= function</div></div>
+<div class='formula-block'><div class='formula-input'>$$ Ts(c) = As_{t} \cdot \operatorname{fs}_{t}{\left(c \right)} $$</div><div class='formula-result'>= function</div></div>
+<div class='formula-block'><div class='formula-input'>$$ Pn(c) = \left(\operatorname{Cc}{\left(c \right)} + \operatorname{Cs}{\left(c \right)} + \operatorname{Ts}{\left(c \right)}\right) \cdot \phi{\left(c \right)} $$</div><div class='formula-result'>= function</div></div>
+<div class='formula-block'><div class='formula-input'>$$ Mn(c) = \left(d_{c} \cdot \operatorname{Cs}{\left(c \right)} + d_{t} \cdot \operatorname{Ts}{\left(c \right)} + \frac{\operatorname{Cc}{\left(c \right)} \cdot a{\left(c \right)}}{2}\right) \cdot \phi{\left(c \right)} $$</div><div class='formula-result'>= function</div></div>
+<div class='text-block'><h2>Dominios de c y barrido</h2>
+</div>
+<div class='formula-block'><div class='formula-input'>$$ c_balance = \frac{d_{t} \cdot eps_{cu}}{eps_{cu} + eps_{y}}\;mm $$</div><div class='formula-result'>= 265.88 mm</div></div>
+<div class='formula-block'><div class='formula-input'>$$ c_trac = linspace(60*mm, c_balance, 4) $$</div><div class='formula-result'>= [60.00 mm, 128.63 mm, 197.25 mm, 265.88 mm]</div></div>
+<div class='formula-block'><div class='formula-input'>$$ c_comp = linspace(c_balance, 350*mm, 4) $$</div><div class='formula-result'>= [265.88 mm, 293.92 mm, 321.96 mm, 350.00 mm]</div></div>
+<div class='formula-block error'><div class='formula-input'>$$ c_vals = c_trac + c_comp[1:] $$</div><div class='formula-result'>= Error evaluating units: &#x27;Symbol&#x27; object is not subscriptable</div></div>
+<div class='formula-block error'><div class='formula-input'>$$ Pn_kN = [Pn(c).to(kN) for c in c_vals] $$</div><div class='formula-result'>= Error evaluating units: cannot assign to function call (&lt;string&gt;, line 1)</div></div>
+<div class='formula-block error'><div class='formula-input'>$$ Mn_kNm = [Mn(c).to(kN*m) for c in c_vals] $$</div><div class='formula-result'>= Error evaluating units: cannot assign to function call (&lt;string&gt;, line 1)</div></div>
+<div class='formula-block error'><div class='formula-input'>$$ PM_tabla = [(c, Pn(c).to(kN), Mn(c).to(kN*m)) for c in c_vals] $$</div><div class='formula-result'>= Error evaluating units: cannot assign to function call (&lt;string&gt;, line 1)</div></div>
+<div class='formula-block'><div class='formula-input'>$$ Pn_limite_kN = \frac{Pn_{cap}}{1000}\;MPa*mm² $$</div><div class='formula-result'>= 2187.79 MPa*mm²</div></div>
+<div class='variable-table'><h3>Variables</h3><table><thead><tr><th>Name</th><th>Expression</th><th>Value</th><th>Units</th></tr></thead><tbody><tr><td>fc</td><td>$$ 28.0 $$</td><td>28.00</td><td>MPa</td></tr><tr><td>fy</td><td>$$ 420.0 $$</td><td>420.00</td><td>MPa</td></tr><tr><td>Es</td><td>$$ 200000.0 $$</td><td>200000.00</td><td>MPa</td></tr><tr><td>b</td><td>$$ 300.0 $$</td><td>300.00</td><td>mm</td></tr><tr><td>h</td><td>$$ 500.0 $$</td><td>500.00</td><td>mm</td></tr><tr><td>cobertura</td><td>$$ 40.0 $$</td><td>40.00</td><td>mm</td></tr><tr><td>diametro_barra</td><td>$$ 16.0 $$</td><td>16.00</td><td>mm</td></tr><tr><td>beta1</td><td>$$ 0.85 $$</td><td>0.85</td><td></td></tr><tr><td>eps_cu</td><td>$$ 0.003 $$</td><td>0.00</td><td></td></tr><tr><td>eps_y</td><td>$$ \frac{fy}{Es} $$</td><td>0.00</td><td></td></tr><tr><td>As_total</td><td>$$ 2 \cdot \pi \cdot diametro_{barra}^{2} $$</td><td>1608.50</td><td>mm²</td></tr><tr><td>As_t</td><td>$$ \frac{As_{total}}{2} $$</td><td>804.25</td><td>mm²</td></tr><tr><td>As_c</td><td>$$ \frac{As_{total}}{2} $$</td><td>804.25</td><td>mm²</td></tr><tr><td>d_t</td><td>$$ h - cobertura - \frac{diametro_{barra}}{2} $$</td><td>452.00</td><td>mm</td></tr><tr><td>d_c</td><td>$$ cobertura + \frac{diametro_{barra}}{2} $$</td><td>48.00</td><td>mm</td></tr><tr><td>P0</td><td>$$ 0.85 \cdot fc \cdot \left(b \cdot h - As_{total}\right) + fy \cdot As_{total} $$</td><td>4207285.89</td><td>MPa*mm²</td></tr><tr><td>Pn_cap</td><td>$$ 0.8 \cdot 0.65 \cdot P_{0} $$</td><td>2187788.66</td><td>MPa*mm²</td></tr><tr><td>c_balance</td><td>$$ \frac{d_{t} \cdot eps_{cu}}{eps_{cu} + eps_{y}} $$</td><td>265.88</td><td>mm</td></tr><tr><td>c_trac</td><td>$$ linspace(60*mm, c_balance, 4) $$</td><td></td><td></td></tr><tr><td>c_comp</td><td>$$ linspace(c_balance, 350*mm, 4) $$</td><td></td><td></td></tr><tr><td>c_vals</td><td>$$ c_trac + c_comp[1:] $$</td><td></td><td></td></tr><tr><td>Pn_kN</td><td>$$ [Pn(c).to(kN) for c in c_vals] $$</td><td></td><td></td></tr><tr><td>Mn_kNm</td><td>$$ [Mn(c).to(kN*m) for c in c_vals] $$</td><td></td><td></td></tr><tr><td>PM_tabla</td><td>$$ [(c, Pn(c).to(kN), Mn(c).to(kN*m)) for c in c_vals] $$</td><td></td><td></td></tr><tr><td>Pn_limite_kN</td><td>$$ \frac{Pn_{cap}}{1000} $$</td><td>2187.79</td><td>MPa*mm²</td></tr></tbody></table></div>
+<div class='log-panel'><h3>Registro de evaluación</h3><table><thead><tr><th>Bloque</th><th>Expresión</th><th>Tiempo</th><th>Unidades</th><th>Sustituciones</th></tr></thead><tbody><tr><td>fc</td><td>fc = 28 MPa</td><td>0.55 ms</td><td>MPa</td><td>-</td></tr><tr><td>fy</td><td>fy = 420 MPa</td><td>0.19 ms</td><td>MPa</td><td>-</td></tr><tr><td>Es</td><td>Es = 200000 MPa</td><td>1.05 ms</td><td>MPa</td><td>-</td></tr><tr><td>b</td><td>b = 300 mm</td><td>0.20 ms</td><td>mm</td><td>-</td></tr><tr><td>h</td><td>h = 500 mm</td><td>0.16 ms</td><td>mm</td><td>-</td></tr><tr><td>cover</td><td>cobertura = 40 mm</td><td>0.14 ms</td><td>mm</td><td>-</td></tr><tr><td>db</td><td>diametro_barra = 16 mm</td><td>0.15 ms</td><td>mm</td><td>-</td></tr><tr><td>beta1</td><td>beta1 = 0.85</td><td>1.13 ms</td><td></td><td>-</td></tr><tr><td>eps_cu</td><td>eps_cu = 0.003</td><td>1.08 ms</td><td></td><td>-</td></tr><tr><td>eps_y</td><td>eps_y = fy / Es</td><td>1.28 ms</td><td></td><td>Es=200000.00, fy=420.00</td></tr><tr><td>As_tot</td><td>As_total = 8 * (pi * diametro_barra**2 / 4)</td><td>1.52 ms</td><td>mm²</td><td>diametro_barra=16.00</td></tr><tr><td>As_t</td><td>As_t = As_total / 2</td><td>1.30 ms</td><td>mm²</td><td>As_total=1608.50</td></tr><tr><td>As_c</td><td>As_c = As_total / 2</td><td>1.23 ms</td><td>mm²</td><td>As_total=1608.50</td></tr><tr><td>d_t</td><td>d_t = h - cobertura - diametro_barra/2</td><td>1.16 ms</td><td>mm</td><td>cobertura=40.00, diametro_barra=16.00, h=500.00</td></tr><tr><td>d_c</td><td>d_c = cobertura + diametro_barra/2</td><td>1.31 ms</td><td>mm</td><td>cobertura=40.00, diametro_barra=16.00</td></tr><tr><td>P0</td><td>P0 = 0.85 * fc * (b * h - As_total) + fy * As_total</td><td>3.20 ms</td><td>MPa*mm²</td><td>As_total=1608.50, b=300.00, fc=28.00, fy=420.00, h=500.00</td></tr><tr><td>Pn_cap</td><td>Pn_cap = 0.8 * 0.65 * P0</td><td>2.48 ms</td><td>MPa*mm²</td><td>P0=4207285.89</td></tr><tr><td>eps_t</td><td>eps_t(c) = eps_cu * (d_t - c) / c</td><td>0.78 ms</td><td></td><td>d_t=452.00, eps_cu=0.00</td></tr><tr><td>eps_c</td><td>eps_c(c) = eps_cu * (c - d_c) / c</td><td>0.73 ms</td><td></td><td>d_c=48.00, eps_cu=0.00</td></tr><tr><td>fs_t</td><td>fs_t(c) = clamp(Es * eps_t(c), -fy, fy)</td><td>0.68 ms</td><td></td><td>-</td></tr><tr><td>fs_c</td><td>fs_c(c) = clamp(Es * eps_c(c), -fy, fy)</td><td>0.66 ms</td><td></td><td>-</td></tr><tr><td>phi</td><td>phi(c) = clamp(0.65 + (0.25/0.003) * (eps_t(c) - 0.002), 0.65, 0.9)</td><td>0.55 ms</td><td></td><td>-</td></tr><tr><td>a</td><td>a(c) = beta1 * c</td><td>0.59 ms</td><td></td><td>beta1=0.85</td></tr><tr><td>Cc</td><td>Cc(c) = 0.85 * fc * b * a(c)</td><td>0.51 ms</td><td></td><td>-</td></tr><tr><td>Cs</td><td>Cs(c) = As_c * fs_c(c)</td><td>0.93 ms</td><td></td><td>As_c=804.25</td></tr><tr><td>Ts</td><td>Ts(c) = As_t * fs_t(c)</td><td>0.69 ms</td><td></td><td>As_t=804.25</td></tr><tr><td>Pn_fun</td><td>Pn(c) = phi(c) * (Cc(c) + Cs(c) + Ts(c))</td><td>0.95 ms</td><td></td><td>-</td></tr><tr><td>Mn_fun</td><td>Mn(c) = phi(c) * (Cc(c) * (a(c)/2) + Cs(c) * d_c + Ts(c) * d_t)</td><td>1.11 ms</td><td></td><td>d_c=48.00, d_t=452.00</td></tr><tr><td>c_bala</td><td>c_balance = d_t * (eps_cu / (eps_cu + eps_y))</td><td>1.60 ms</td><td>mm</td><td>d_t=452.00, eps_cu=0.00, eps_y=0.00</td></tr><tr><td>c_trac</td><td>c_trac = linspace(60*mm, c_balance, 4)</td><td>1.78 ms</td><td></td><td>-</td></tr><tr><td>c_comp</td><td>c_comp = linspace(c_balance, 350*mm, 4)</td><td>1.27 ms</td><td></td><td>-</td></tr><tr><td>c_vals</td><td>c_vals = c_trac + c_comp[1:]</td><td>0.98 ms</td><td></td><td>-</td></tr><tr><td>Pn_kN</td><td>Pn_kN = [Pn(c).to(kN) for c in c_vals]</td><td>39.41 ms</td><td></td><td>-</td></tr><tr><td>Mn_kNm</td><td>Mn_kNm = [Mn(c).to(kN*m) for c in c_vals]</td><td>42.72 ms</td><td></td><td>-</td></tr><tr><td>PM_tab</td><td>PM_tabla = [(c, Pn(c).to(kN), Mn(c).to(kN*m)) for c in c_vals]</td><td>77.58 ms</td><td></td><td>-</td></tr><tr><td>Pn_lim</td><td>Pn_limite_kN = Pn_cap / 1000</td><td>1.19 ms</td><td>MPa*mm²</td><td>Pn_cap=2187788.66</td></tr></tbody></table></div>
+            </div>
+        </body>
+        </html>
+        

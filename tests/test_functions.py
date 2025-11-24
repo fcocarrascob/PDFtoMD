@@ -141,3 +141,16 @@ def test_multiple_functions() -> None:
     assert call1.numeric_value == pytest.approx(10.0)
     assert call2.numeric_value == pytest.approx(15.0)
     assert len(context.functions) == 2
+
+
+def test_function_call_with_float_args() -> None:
+    """Functions should handle decimal arguments without casting errors."""
+
+    func_def = FormulaBlock("momento_inercia(b, h) = b * h**3 / 12")
+    func_call = FormulaBlock("I1 = momento_inercia(0.2, 0.3)")
+
+    doc = Document([func_def, func_call])
+    doc.evaluate()
+
+    assert func_call.evaluation_status == "ok"
+    assert func_call.numeric_value == pytest.approx(0.00045)

@@ -364,6 +364,7 @@ class FormulaBlock(Block):
                 "pi": sp.pi,
                 "E": sp.E,
                 "Integer": sp.Integer,
+                "Float": sp.Float,
                 "Rational": sp.Rational,
                 "Symbol": sp.Symbol,
                 "linspace": sp.Function("linspace"),
