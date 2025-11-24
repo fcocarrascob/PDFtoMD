@@ -468,37 +468,66 @@ class NotebookTab(QWidget):
         layout = QHBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 4)
 
-        ops = [
-            ("+", " + "),
-            ("-", " - "),
-            ("\u00d7", " * "),
-            ("\u00f7", " / "),
-            ("^", " ** "),
-            ("\u221a", "sqrt()"),
-            ("\u00b7", " \u22c5 "),  # middle dot for multiplication
-            ("\u2248", " \u2248 "),
-        ]
-        for label, snippet in ops:
+        def _add_btn(label: str, snippet: str, tip: str | None = None) -> None:
             btn = QToolButton()
             btn.setText(label)
-            btn.setToolTip(f"Insert {label}")
+            btn.setToolTip(tip or f"Insert {label}")
             btn.clicked.connect(lambda _=False, s=snippet: self.insert_snippet(s))
             layout.addWidget(btn)
 
-        # Quick LaTeX snippets for text/fmla blocks
-        latex_snippets = [
-            ("Inline $", "$·$"),
-            ("Frac", "\\frac{·}{·}"),
-            ("Sqrt", "\\sqrt{·}"),
-            ("Sub", "x_{·}"),
-            ("Sup", "x^{·}"),
+        # Operadores b?sicos
+        ops = [
+            ("+", " + "),
+            ("-", " - "),
+            ("×", " * "),
+            ("÷", " / "),
+            ("^", " ** "),
+            ("√", "sqrt()"),
+            ("·", " ⋅ "),  # middle dot for multiplication
+            ("≈", " ≈ "),
         ]
-        for label, snippet in latex_snippets:
-            btn = QToolButton()
-            btn.setText(label)
-            btn.setToolTip(f"Insert {snippet}")
-            btn.clicked.connect(lambda _=False, s=snippet: self.insert_snippet(s))
-            layout.addWidget(btn)
+        for label, snippet in ops:
+            _add_btn(label, snippet)
+
+        layout.addSpacing(8)
+
+        # Funciones matem?ticas
+        math_funcs = [
+            ("sin", "sin()"),
+            ("cos", "cos()"),
+            ("tan", "tan()"),
+            ("exp", "exp()"),
+            ("log", "log()"),
+            ("pi", "pi"),
+            ("abs", "abs()"),
+        ]
+        for label, snippet in math_funcs:
+            _add_btn(label, snippet)
+
+        layout.addSpacing(8)
+
+        # Agregados y listas
+        agg_funcs = [
+            ("sum", "sum()"),
+            ("min", "min()"),
+            ("max", "max()"),
+            ("range", "range()"),
+        ]
+        for label, snippet in agg_funcs:
+            _add_btn(label, snippet)
+
+        layout.addSpacing(8)
+
+        # Arrays y barridos
+        array_funcs = [
+            ("linspace", "linspace( , , )"),
+            ("arange", "arange( , , )"),
+            ("sweep", "sweep(f, xs)"),
+        ]
+        for label, snippet in array_funcs:
+            _add_btn(label, snippet, tip=f"Insert {label}")
+
+        layout.addSpacing(8)
 
         # Function definition button
         func_btn = QToolButton()
@@ -507,28 +536,24 @@ class NotebookTab(QWidget):
         func_btn.clicked.connect(lambda: self.insert_snippet("f(x) = "))
         layout.addWidget(func_btn)
 
-        # Array/function helpers
-        linspace_btn = QToolButton()
-        linspace_btn.setText("linspace")
-        linspace_btn.setToolTip("Insert linspace(start, stop, num)")
-        linspace_btn.clicked.connect(lambda: self.insert_snippet("linspace( , , )"))
-        layout.addWidget(linspace_btn)
+        layout.addSpacing(8)
 
-        arange_btn = QToolButton()
-        arange_btn.setText("arange")
-        arange_btn.setToolTip("Insert arange(start, stop, step)")
-        arange_btn.clicked.connect(lambda: self.insert_snippet("arange( , , )"))
-        layout.addWidget(arange_btn)
+        # Quick LaTeX snippets for text/fmla blocks
+        latex_snippets = [
+            ("Inline $", "$?$"),
+            ("Frac", "\frac{?}{?}"),
+            ("Sqrt", "\sqrt{?}"),
+            ("Sub", "x_{?}"),
+            ("Sup", "x^{?}"),
+        ]
+        for label, snippet in latex_snippets:
+            _add_btn(label, snippet, tip=f"Insert {snippet}")
 
-        sweep_btn = QToolButton()
-        sweep_btn.setText("sweep")
-        sweep_btn.setToolTip("Insert sweep(f, xs)")
-        sweep_btn.clicked.connect(lambda: self.insert_snippet("sweep(f, xs)"))
-        layout.addWidget(sweep_btn)
+        layout.addSpacing(8)
 
         # Greek symbols quick pick
         self.greek_combo = QComboBox()
-        greek_items = ["\\alpha", "\\beta", "\\gamma", "\\delta", "\\phi", "\\theta", "\\lambda", "\\pi", "\\sigma", "\\omega"]
+        greek_items = ["\alpha", "\beta", "\gamma", "\delta", "\phi", "\theta", "\lambda", "\pi", "\sigma", "\omega"]
         self.greek_combo.addItems(greek_items)
         self.greek_combo.setToolTip("Insert Greek symbol (LaTeX)")
 
@@ -542,7 +567,6 @@ class NotebookTab(QWidget):
 
         layout.addStretch()
         return container
-
     def insert_snippet(self, text: str) -> None:
         """Insert a math snippet at the current cursor position."""
 
