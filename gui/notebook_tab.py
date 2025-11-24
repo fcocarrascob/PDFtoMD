@@ -58,52 +58,64 @@ class NotebookTab(QWidget):
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
 
-        # Left column: controls + lists + editor
+        # Left column: controls + lists + editor (controls on the left)
         left_panel = QWidget()
-        left_layout = QVBoxLayout(left_panel)
-        left_layout.setContentsMargins(6, 6, 6, 6)
-        left_layout.setSpacing(6)
+        left_outer = QHBoxLayout(left_panel)
+        left_outer.setContentsMargins(6, 6, 6, 6)
+        left_outer.setSpacing(6)
 
-        # Controls rows
-        add_text_btn = QPushButton("Add Text Block")
+        # Controls column (grouped vertically)
+        controls_panel = QWidget()
+        controls_layout = QVBoxLayout(controls_panel)
+        controls_layout.setContentsMargins(0, 0, 0, 0)
+        controls_layout.setSpacing(4)
+
+        def _add_group(title: str, buttons: list[QPushButton]) -> None:
+            label = QLabel(title)
+            label.setStyleSheet("font-weight: bold; margin-top: 4px;")
+            controls_layout.addWidget(label)
+            for btn in buttons:
+                btn.setMinimumWidth(120)
+                controls_layout.addWidget(btn)
+
+        add_text_btn = QPushButton("Add\nText")
         add_text_btn.clicked.connect(self.add_text_block)
-        add_formula_btn = QPushButton("Add Formula Block")
+        add_formula_btn = QPushButton("Add\nFormula")
         add_formula_btn.clicked.connect(self.add_formula_block)
-        delete_btn = QPushButton("Delete Selected")
+        delete_btn = QPushButton("Delete\nSelected")
         delete_btn.clicked.connect(self.delete_selected_block)
 
-        move_up_btn = QPushButton("Move Up")
+        move_up_btn = QPushButton("Move\nUp")
         move_up_btn.clicked.connect(lambda: self.move_selected_block(-1))
-        move_down_btn = QPushButton("Move Down")
+        move_down_btn = QPushButton("Move\nDown")
         move_down_btn.clicked.connect(lambda: self.move_selected_block(1))
+
         undo_btn = QPushButton("Undo")
         undo_btn.clicked.connect(self.undo_action)
         redo_btn = QPushButton("Redo")
         redo_btn.clicked.connect(self.redo_action)
 
-        save_btn = QPushButton("Save Notebook")
+        save_btn = QPushButton("Save\nNotebook")
         save_btn.clicked.connect(self.save_document)
-        load_btn = QPushButton("Load Notebook")
+        load_btn = QPushButton("Load\nNotebook")
         load_btn.clicked.connect(self.load_document)
-        export_html_btn = QPushButton("Export HTML")
+        export_html_btn = QPushButton("Export\nHTML")
         export_html_btn.clicked.connect(self.export_html)
-        export_md_btn = QPushButton("Export Markdown")
+        export_md_btn = QPushButton("Export\nMarkdown")
         export_md_btn.clicked.connect(self.export_markdown)
 
-        row1 = QHBoxLayout()
-        for btn in (add_text_btn, add_formula_btn, delete_btn, move_up_btn, move_down_btn):
-            row1.addWidget(btn)
-        row1.addStretch()
+        _add_group("Blocks", [add_text_btn, add_formula_btn, delete_btn])
+        _add_group("Order", [move_up_btn, move_down_btn])
+        _add_group("Edit", [undo_btn, redo_btn])
+        _add_group("File", [save_btn, load_btn, export_html_btn, export_md_btn])
+        controls_layout.addStretch()
 
-        row2 = QHBoxLayout()
-        for btn in (undo_btn, redo_btn, save_btn, load_btn, export_html_btn, export_md_btn):
-            row2.addWidget(btn)
-        row2.addStretch()
+        # Main content (lists + editor)
+        left_content = QWidget()
+        left_layout = QVBoxLayout(left_content)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.setSpacing(6)
 
-        left_layout.addLayout(row1)
-        left_layout.addLayout(row2)
-
-        # Lists
         block_list_label = QLabel("Blocks (id/type)")
         left_layout.addWidget(block_list_label)
         left_layout.addWidget(self.block_list, 1)
@@ -115,17 +127,23 @@ class NotebookTab(QWidget):
         self.block_stack.setAlternatingRowColors(True)
         left_layout.addWidget(self.block_stack, 1)
 
-        # Editor
         self.editor.setPlaceholderText("Enter text or a SymPy-friendly expression (use * for multiplication: 3*a, 2*d)...")
         left_layout.addWidget(self.editor, 1)
         self.hint_label.setStyleSheet("color: #f7c6c5; font-size: 11px;")
         left_layout.addWidget(self.hint_label)
 
+        left_outer.addWidget(controls_panel)
+        left_outer.addWidget(left_content, 1)
+
         # Center column: preview
         center_panel = QWidget()
+        center_panel.setMinimumWidth(400)
         center_layout = QVBoxLayout(center_panel)
         center_layout.setContentsMargins(6, 6, 6, 6)
         center_layout.setSpacing(6)
+        preview_label = QLabel("Preview")
+        preview_label.setStyleSheet("font-weight: bold;")
+        center_layout.addWidget(preview_label)
         center_layout.addWidget(self.preview, 1)
 
         # Right column: toolbar
@@ -139,8 +157,8 @@ class NotebookTab(QWidget):
         splitter.addWidget(left_panel)
         splitter.addWidget(center_panel)
         splitter.addWidget(right_panel)
-        splitter.setStretchFactor(0, 4)
-        splitter.setStretchFactor(1, 3)
+        splitter.setStretchFactor(0, 2)
+        splitter.setStretchFactor(1, 2)
         splitter.setStretchFactor(2, 1)
 
         main_layout = QHBoxLayout(self)
@@ -484,8 +502,8 @@ class NotebookTab(QWidget):
         container = QWidget()
         layout = QVBoxLayout(container)
         layout.setContentsMargins(4, 4, 4, 4)
-        layout.setSpacing(6)
-        container.setMinimumWidth(240)
+        layout.setSpacing(4)
+        container.setMinimumWidth(220)
 
         def _add_group(title: str, items: list[tuple[str, str]]) -> None:
             lbl = QLabel(title)
@@ -494,13 +512,16 @@ class NotebookTab(QWidget):
             grid_widget = QWidget()
             grid = QGridLayout(grid_widget)
             grid.setContentsMargins(0, 0, 0, 0)
-            grid.setSpacing(4)
+            grid.setHorizontalSpacing(4)
+            grid.setVerticalSpacing(2)
             for idx, (label, snippet) in enumerate(items):
                 btn = QToolButton()
                 btn.setText(label)
                 btn.setToolTip(f"Insert {label}")
                 btn.clicked.connect(lambda _=False, s=snippet: self.insert_snippet(s))
-                row, col = divmod(idx, 4)
+                btn.setMinimumWidth(52)
+                btn.setMinimumHeight(24)
+                row, col = divmod(idx, 3)
                 grid.addWidget(btn, row, col)
             layout.addWidget(grid_widget)
 
@@ -543,11 +564,11 @@ class NotebookTab(QWidget):
         ])
 
         _add_group("LaTeX", [
-            ("Inline $", "$ $"),
-            ("Frac", "\frac{}{}"),
-            ("Sqrt", "\sqrt{}"),
-            ("Sub", "x_{}"),
-            ("Sup", "x^{}"),
+            ("Inline $", r"$ $"),
+            ("Frac", r"\frac{}{}"),
+            ("Sqrt", r"\sqrt{}"),
+            ("Sub", r"x_{}"),
+            ("Sup", r"x^{}"),
         ])
 
         greek_label = QLabel("Greek")
