@@ -500,6 +500,13 @@ class NotebookTab(QWidget):
             btn.clicked.connect(lambda _=False, s=snippet: self.insert_snippet(s))
             layout.addWidget(btn)
 
+        # Function definition button
+        func_btn = QToolButton()
+        func_btn.setText("f(x)")
+        func_btn.setToolTip("Insert function definition template")
+        func_btn.clicked.connect(lambda: self.insert_snippet("f(x) = "))
+        layout.addWidget(func_btn)
+
         # Greek symbols quick pick
         self.greek_combo = QComboBox()
         greek_items = ["\\alpha", "\\beta", "\\gamma", "\\delta", "\\phi", "\\theta", "\\lambda", "\\pi", "\\sigma", "\\omega"]

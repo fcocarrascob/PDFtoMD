@@ -5,7 +5,7 @@ import html
 from dataclasses import dataclass
 from typing import Iterable
 
-from notebook.document import Document, FormulaBlock, TextBlock, VariableRecord
+from notebook.document import Document, FormulaBlock, TextBlock, VariableRecord, FunctionRecord
 
 
 @dataclass
@@ -45,10 +45,13 @@ class NotebookRenderer:
         if not body:
             body = "<p class='text-block'>No blocks yet.</p>"
 
+        function_table = self._render_function_table(context.functions)
         variable_table = self._render_variable_table(context.variables)
         error_panel = self._render_error_panel(context.errors)
         hide_logs = bool(getattr(options, "hide_logs", False)) if options is not None else False
         log_panel = "" if hide_logs else self._render_log_panel(context.logs)
+        if function_table:
+            body = f"{body}\n{function_table}"
         if variable_table:
             body = f"{body}\n{variable_table}"
         if error_panel:
@@ -128,6 +131,36 @@ class NotebookRenderer:
             "<table>"
             "<thead>"
             "<tr><th>Bloque</th><th>Expresión</th><th>Tiempo</th><th>Sustituciones</th></tr>"
+            "</thead>"
+            "<tbody>"
+            + "".join(rows)
+            + "</tbody>"
+            "</table>"
+            "</div>"
+        )
+
+    def _render_function_table(self, functions: dict[str, FunctionRecord]) -> str:
+        """Render user-defined functions."""
+
+        if not functions:
+            return ""
+
+        rows = []
+        for func_record in functions.values():
+            params_str = ", ".join(func_record.parameters)
+            rows.append(
+                "<tr>"
+                f"<td>{html.escape(func_record.name)}({html.escape(params_str)})</td>"
+                f"<td>$$ {func_record.expression} $$</td>"
+                "</tr>"
+            )
+
+        return (
+            "<div class='function-table'>"
+            "<h3>Functions</h3>"
+            "<table>"
+            "<thead>"
+            "<tr><th>Signature</th><th>Expression</th></tr>"
             "</thead>"
             "<tbody>"
             + "".join(rows)
@@ -225,11 +258,11 @@ class NotebookRenderer:
             .formula-input {{ font-size: 18px; margin-bottom: 6px; }}
             .formula-result {{ color: {self.theme.accent}; font-weight: bold; }}
             .formula-block.error .formula-result {{ color: #d9534f; }}
-            .variable-table {{ margin-top: 24px; background: {self.theme.panel}; padding: 12px; border-radius: 6px; border: 1px solid {self.theme.border}; }}
-            .variable-table h3 {{ margin-top: 0; }}
-            .variable-table table {{ width: 100%; border-collapse: collapse; }}
-            .variable-table th, .variable-table td {{ padding: 6px 8px; text-align: left; border-bottom: 1px solid {self.theme.border}; }}
-            .variable-table th {{ color: {self.theme.text}; opacity: 0.8; }}
+            .function-table, .variable-table {{ margin-top: 24px; background: {self.theme.panel}; padding: 12px; border-radius: 6px; border: 1px solid {self.theme.border}; }}
+            .function-table h3, .variable-table h3 {{ margin-top: 0; }}
+            .function-table table, .variable-table table {{ width: 100%; border-collapse: collapse; }}
+            .function-table th, .function-table td, .variable-table th, .variable-table td {{ padding: 6px 8px; text-align: left; border-bottom: 1px solid {self.theme.border}; }}
+            .function-table th, .variable-table th {{ color: {self.theme.text}; opacity: 0.8; }}
             .error-panel, .log-panel {{ margin-top: 16px; background: {self.theme.panel}; padding: 12px; border-radius: 6px; border: 1px solid {self.theme.border}; }}
             .error-panel h3 {{ margin-top: 0; color: #d9534f; }}
             .log-panel h3 {{ margin-top: 0; color: {self.theme.accent}; }}

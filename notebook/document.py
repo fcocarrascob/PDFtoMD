@@ -49,11 +49,22 @@ class VariableRecord:
 
 
 @dataclass
+class FunctionRecord:
+    """Stores a user-defined function."""
+
+    name: str
+    parameters: list[str]
+    expression: str
+    sympy_lambda: Optional[callable] = None
+
+
+@dataclass
 class EvaluationContext:
     """Context manager that keeps symbol and numeric value registries."""
 
     symbols: SymbolRegistry = field(default_factory=SymbolRegistry)
     numeric_values: dict[str, float] = field(default_factory=dict)
+    functions: dict[str, FunctionRecord] = field(default_factory=dict)
     variables: list[VariableRecord] = field(default_factory=list)
     errors: list[dict] = field(default_factory=list)
     logs: list[dict] = field(default_factory=list)
@@ -81,6 +92,22 @@ class EvaluationContext:
                 expression=expression,
                 numeric_value=numeric_value,
             )
+        )
+
+    def register_function(
+        self,
+        name: str,
+        parameters: list[str],
+        expression: str,
+        sympy_lambda: Optional[callable] = None,
+    ) -> None:
+        """Register a user-defined function."""
+
+        self.functions[name] = FunctionRecord(
+            name=name,
+            parameters=parameters,
+            expression=expression,
+            sympy_lambda=sympy_lambda,
         )
 
     def register_error(self, *, block_id: str, message: str, error_type: str) -> None:
@@ -235,10 +262,43 @@ class FormulaBlock(Block):
     numeric_value: Optional[float] = None
     is_assignment: bool = False
     variable_name: Optional[str] = None
+    is_function_def: bool = False
+    function_name: Optional[str] = None
+    function_params: Optional[list[str]] = None
     evaluation_status: str = "ok"
     error_type: Optional[str] = None
     error_message: Optional[str] = None
     evaluation_time_ms: Optional[float] = None
+
+    @staticmethod
+    def _parse_function_definition(lhs: str) -> Optional[tuple[str, list[str]]]:
+        """Detect function definition syntax: f(x, y) and return (name, [params])."""
+
+        # Match pattern: function_name(param1, param2, ...)
+        pattern = r'^([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\s*([^)]*)\s*\)$'
+        match = re.match(pattern, lhs.strip())
+
+        if not match:
+            return None
+
+        func_name = match.group(1)
+        params_str = match.group(2).strip()
+
+        if not params_str:
+            return None  # Function must have at least one parameter
+
+        # Parse parameters
+        params = [p.strip() for p in params_str.split(',') if p.strip()]
+
+        if not params:
+            return None
+
+        # Validate parameter names
+        for param in params:
+            if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', param):
+                return None
+
+        return func_name, params
 
     def _parse_assignment(self, rhs: str, context: EvaluationContext) -> sp.Expr:
         """Parse the right-hand side of an assignment."""
@@ -278,6 +338,10 @@ class FormulaBlock(Block):
             }
             for name, obj in safe_locals.items():
                 context.symbols.setdefault(name, obj)
+            # Add user-defined functions as undefined functions for sympy parsing
+            for func_name in context.functions.keys():
+                if func_name not in context.symbols:
+                    context.symbols[func_name] = sp.Function(func_name)
             return parse_expr(
                 expr,
                 local_dict=context.symbols,
@@ -303,6 +367,10 @@ class FormulaBlock(Block):
 
         env = {}
         env.update(math_env())
+        # Add user-defined functions
+        for func_name, func_record in context.functions.items():
+            if func_record.sympy_lambda:
+                env[func_name] = func_record.sympy_lambda
         # Fallback to numeric-only substitutions for symbols.
         for name, value in context.numeric_values.items():
             env.setdefault(name, value)
@@ -449,6 +517,56 @@ class FormulaBlock(Block):
                 lhs = lhs.strip()
                 rhs = rhs.strip()
                 if lhs:
+                    # Check if this is a function definition
+                    func_def = self._parse_function_definition(lhs)
+                    if func_def:
+                        func_name, params = func_def
+                        self.is_function_def = True
+                        self.function_name = func_name
+                        self.function_params = params
+
+                        try:
+                            # Create sympy symbols for parameters
+                            param_symbols = [sp.Symbol(p) for p in params]
+
+                            # Parse RHS with parameter symbols in context
+                            temp_context = copy.copy(context)
+                            for param in params:
+                                temp_context.symbols[param] = sp.Symbol(param)
+
+                            func_expr = self._safe_sympify(rhs, temp_context)
+                            self.sympy_expr = func_expr
+
+                            # Create sympy lambda function
+                            sympy_lambda = sp.lambdify(param_symbols, func_expr, modules=['numpy', 'math'])
+
+                            # Register function
+                            context.register_function(func_name, params, rhs, sympy_lambda)
+
+                            # Format result
+                            params_str = ", ".join(params)
+                            self.result = f"Function {func_name}({params_str}) defined"
+
+                            # Generate LaTeX
+                            func_expr_latex = sp.latex(func_expr, order="none", mul_symbol=" \\cdot ")
+                            func_expr_latex = self._cleanup_latex(func_expr_latex)
+                            self.latex = f"{html.escape(func_name)}({html.escape(params_str)}) = {func_expr_latex}"
+
+                            return
+                        except Exception as exc:
+                            self.result = f"Error defining function: {exc}"
+                            self.evaluation_status = "error"
+                            self.error_type = type(exc).__name__
+                            self.error_message = str(exc)
+                            self.latex = f"{html.escape(lhs)} = {html.escape(rhs)}"
+                            context.register_error(
+                                block_id=self.block_id,
+                                message=self.error_message,
+                                error_type=self.error_type,
+                            )
+                            return
+
+                    # Regular assignment
                     self.is_assignment = True
                     self.variable_name = lhs
                     self.sympy_expr = self._parse_assignment(rhs, context)
