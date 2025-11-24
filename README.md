@@ -77,3 +77,33 @@ NumPy resulta útil como complemento cuando necesitas:
 - **Operaciones matriciales intensivas** (rigideces, modos, integración numérica) donde las rutinas BLAS subyacentes mejoran el tiempo de cómputo.
 
 Para casos típicos de diseño manual o verificación de pocos elementos, SymPy es suficiente y mantiene el pipeline de unidades/LaTeX sin añadir dependencias binarias. Considera añadir NumPy si tu flujo involucra muchos escenarios repetitivos o cálculos matriciales donde la velocidad sea crítica.
+
+## Cómo barrer un diagrama P–M con funciones simbólicas (sin NumPy)
+El cuaderno `pm_interaccion_simple.json` ya calcula varios puntos de interacción evaluando valores concretos de la profundidad del eje neutro (`c`). Si quieres aumentar la densidad de puntos sin añadir dependencias, puedes encapsular el equilibrio en funciones simbólicas y evaluarlas en una pequeña lista de valores.
+
+### Idea base
+- Define funciones con SymPy que representen \( P_n(c) \) y \( M_n(c) \) reutilizando las variables de materiales y geometría que ya están en el cuaderno (por ejemplo, `fc`, `fy`, `bw`, `h`, `As1`–`As4`, distancias a ejes, etc.).
+- En otro bloque, declara una lista corta de profundidades `c_vals` (por tramo: tracción, balance, compresión) y evalúa las funciones en cada `c` usando una comprensión de listas. El pipeline conserva unidades porque los símbolos y cantidades ya están registrados en el `EvaluationContext`.
+
+### Aplicado al ejemplo
+- En un bloque de fórmula debajo de los parámetros ya existentes, puedes definir:
+  ```
+  Pn_c = Pn_expr(c)  # usa la expresión de equilibrio axial que ya tienes en el cuaderno
+  Mn_c = Mn_expr(c)  # idem para el momento
+  Pn = sp.lambdify(c, Pn_c)
+  Mn = sp.lambdify(c, Mn_c)
+  ```
+  Aquí `Pn_expr` y `Mn_expr` corresponden a las expresiones que hoy calculas en cada punto; al encapsularlas en funciones, evitas repetir la algebra en cada bloque.
+- En un bloque siguiente, barre algunos valores representativos:
+  ```
+  c_vals = [0.08*m, 0.12*m, 0.18*m, c_balance, 0.25*m, 0.30*m]
+  PM_tabla = [(Pn(ci).to(kN), Mn(ci).to(kN*m)) for ci in c_vals]
+  ```
+  Cada par \( P_n, M_n \) se devuelve con unidades homogéneas. La tabla se muestra en la previsualización y también queda en la tabla de variables para copiarla a Excel/Plotly.
+
+### Propuesta de implementación en el cuaderno
+- **Nuevo bloque de funciones:** añadir un bloque de fórmula justo antes de los puntos numéricos actuales, donde se definan `Pn(c)` y `Mn(c)` a partir de las mismas ecuaciones que hoy se repiten en cada “Punto”. Esto mantiene la trazabilidad del LaTeX y las unidades.
+- **Bloque de barrido compacto:** sustituir o complementar los bloques individuales con un bloque que evalúe `Pn(c)` y `Mn(c)` en la lista `c_vals` de la sección anterior. Puedes conservar uno o dos puntos manuales para referencia visual y usar `PM_tabla` para el resto.
+- **Exportar resultados:** en el mismo bloque o en uno siguiente, añade conversiones a kN/kN·m (como en los puntos actuales) para que `PM_tabla` esté lista para graficar sin postprocesado.
+
+Con este patrón obtienes un barrido denso sin NumPy y sin perder el formateo LaTeX ni el manejo de unidades del cuaderno actual.
