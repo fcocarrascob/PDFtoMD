@@ -45,3 +45,17 @@ def test_mul_symbol_used_between_symbols_and_numbers():
     assert "\\cdot" in block.latex
     # Should not collapse symbols; expect separators between each factor.
     assert "phi" in block.latex and "fc" in block.latex and "b" in block.latex
+
+
+def test_arrays_render_in_table():
+    doc = Document(
+        [
+            FormulaBlock("arr = linspace(0, 4, 3)"),
+        ]
+    )
+    html = doc.to_html()
+
+    assert "<h3>Arrays</h3>" in html
+    assert "arr" in html
+    # values should be formatted with two decimals
+    assert "0.00" in html and "4.00" in html

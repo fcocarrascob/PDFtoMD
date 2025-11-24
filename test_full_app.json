@@ -194,6 +194,34 @@
     },
     {
       "type": "TextBlock",
+      "raw": "### 3.3 Funciones matem\u00e1ticas adicionales"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "raiz_simple = sqrt(16)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "log_natural = log(100)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "exponencial = exp(1)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "tan_pi4 = tan(pi/4)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 3.4 Arrays con funciones matem\u00e1ticas"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "arr10 = linspace(1, exp(1), 4)"
+    },
+    {
+      "type": "TextBlock",
       "raw": "### 3.2 Edge Cases"
     },
     {

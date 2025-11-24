@@ -44,6 +44,13 @@ Aplicación de escritorio en PySide6 que combina dos pestañas:
 - Las multiplicaciones se muestran con `·` entre números y símbolos (`mul_symbol="\cdot"`).
 - Los errores de evaluación/parseo se muestran en el panel de errores, pero el resto de los bloques sigue evaluando.
 
+
+## Pruebas y regresion
+- Punto de verdad para QA: `INSTRUCCIONES_PRUEBA.md` describe el flujo de prueba y `test_full_app.json` es el cuaderno maestro con todas las secciones (funciones, arrays, casos mixtos y extra de matematicas). El preview esperado queda en `test_full_app_preview.html`.
+- Validacion rapida: `python verify_test_document.py` carga `test_full_app.json`, evalua, lista funciones/arrays/variables y regenera el preview.
+- Al agregar una nueva funcion/feature: suma un bloque representativo al final de `test_full_app.json`, ejecuta el script y comprueba que siga sin errores. Si cambia el comportamiento esperado, actualiza tambien `INSTRUCCIONES_PRUEBA.md`.
+- Para futuros agentes: mantener sincronizados estos tres artefactos (instrucciones, cuaderno JSON y preview HTML) antes de dar por buena cualquier mejora.
+
 ## TODO / posibles mejoras
 - Undo/redo y mover bloques (drag & drop) en el notebook.
 - Validaciones y mensajes de error más claros en fórmulas.

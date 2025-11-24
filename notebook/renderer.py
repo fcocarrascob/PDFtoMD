@@ -46,12 +46,15 @@ class NotebookRenderer:
             body = "<p class='text-block'>No blocks yet.</p>"
 
         function_table = self._render_function_table(context.functions)
+        array_table = self._render_array_table(context.arrays)
         variable_table = self._render_variable_table(context.variables)
         error_panel = self._render_error_panel(context.errors)
         hide_logs = bool(getattr(options, "hide_logs", False)) if options is not None else False
         log_panel = "" if hide_logs else self._render_log_panel(context.logs)
         if function_table:
             body = f"{body}\n{function_table}"
+        if array_table:
+            body = f"{body}\n{array_table}"
         if variable_table:
             body = f"{body}\n{variable_table}"
         if error_panel:
@@ -131,6 +134,43 @@ class NotebookRenderer:
             "<table>"
             "<thead>"
             "<tr><th>Bloque</th><th>Expresión</th><th>Tiempo</th><th>Sustituciones</th></tr>"
+            "</thead>"
+            "<tbody>"
+            + "".join(rows)
+            + "</tbody>"
+            "</table>"
+            "</div>"
+        )
+
+    def _render_array_table(self, arrays: dict[str, ArrayRecord]) -> str:
+        """Render arrays captured during evaluation."""
+
+        if not arrays:
+            return ""
+
+        rows = []
+        for arr in arrays.values():
+            values = arr.values
+            if len(values) <= 8:
+                value_str = ", ".join(f"{v:.2f}" for v in values)
+            else:
+                head = ", ".join(f"{v:.2f}" for v in values[:5])
+                tail = ", ".join(f"{v:.2f}" for v in values[-2:])
+                value_str = f"{head}, ..., {tail}"
+            rows.append(
+                "<tr>"
+                f"<td>{html.escape(arr.name)}</td>"
+                f"<td>$$ {arr.expression} $$</td>"
+                f"<td>{html.escape(value_str)}</td>"
+                "</tr>"
+            )
+
+        return (
+            "<div class='variable-table'>"
+            "<h3>Arrays</h3>"
+            "<table>"
+            "<thead>"
+            "<tr><th>Name</th><th>Expression</th><th>Values</th></tr>"
             "</thead>"
             "<tbody>"
             + "".join(rows)
