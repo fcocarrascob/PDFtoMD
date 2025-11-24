@@ -5,7 +5,7 @@ import html
 from dataclasses import dataclass
 from typing import Iterable
 
-from notebook.document import Document, FormulaBlock, TextBlock, VariableRecord, FunctionRecord
+from notebook.document import Document, FormulaBlock, TextBlock, VariableRecord, FunctionRecord, ArrayRecord
 
 
 @dataclass

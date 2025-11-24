@@ -34,6 +34,11 @@ class SymbolRegistry(dict):
     """Dictionary that lazily creates SymPy symbols on demand."""
 
     def __missing__(self, key: str) -> sp.Symbol:
+        # Special handling for array functions - always create as Functions
+        if key in ("linspace", "arange"):
+            func = sp.Function(key)
+            self[key] = func
+            return func
         symbol = sp.Symbol(key)
         self[key] = symbol
         return symbol
@@ -59,12 +64,22 @@ class FunctionRecord:
 
 
 @dataclass
+class ArrayRecord:
+    """Stores an array of numeric values."""
+
+    name: str
+    values: list[float]
+    expression: str
+
+
+@dataclass
 class EvaluationContext:
     """Context manager that keeps symbol and numeric value registries."""
 
     symbols: SymbolRegistry = field(default_factory=SymbolRegistry)
     numeric_values: dict[str, float] = field(default_factory=dict)
     functions: dict[str, FunctionRecord] = field(default_factory=dict)
+    arrays: dict[str, ArrayRecord] = field(default_factory=dict)
     variables: list[VariableRecord] = field(default_factory=list)
     errors: list[dict] = field(default_factory=list)
     logs: list[dict] = field(default_factory=list)
@@ -108,6 +123,20 @@ class EvaluationContext:
             parameters=parameters,
             expression=expression,
             sympy_lambda=sympy_lambda,
+        )
+
+    def register_array(
+        self,
+        name: str,
+        values: list[float],
+        expression: str,
+    ) -> None:
+        """Register an array of values."""
+
+        self.arrays[name] = ArrayRecord(
+            name=name,
+            values=values,
+            expression=expression,
         )
 
     def register_error(self, *, block_id: str, message: str, error_type: str) -> None:
@@ -265,6 +294,8 @@ class FormulaBlock(Block):
     is_function_def: bool = False
     function_name: Optional[str] = None
     function_params: Optional[list[str]] = None
+    is_array: bool = False
+    array_values: Optional[list[float]] = None
     evaluation_status: str = "ok"
     error_type: Optional[str] = None
     error_message: Optional[str] = None
@@ -335,6 +366,8 @@ class FormulaBlock(Block):
                 "Integer": sp.Integer,
                 "Rational": sp.Rational,
                 "Symbol": sp.Symbol,
+                "linspace": sp.Function("linspace"),
+                "arange": sp.Function("arange"),
             }
             for name, obj in safe_locals.items():
                 context.symbols.setdefault(name, obj)
@@ -342,6 +375,13 @@ class FormulaBlock(Block):
             for func_name in context.functions.keys():
                 if func_name not in context.symbols:
                     context.symbols[func_name] = sp.Function(func_name)
+
+            # Always ensure linspace and arange are Functions (create fresh objects)
+            linspace_func = type('linspace', (sp.Function,), {})
+            arange_func = type('arange', (sp.Function,), {})
+            context.symbols["linspace"] = linspace_func
+            context.symbols["arange"] = arange_func
+
             return parse_expr(
                 expr,
                 local_dict=context.symbols,
@@ -581,8 +621,18 @@ class FormulaBlock(Block):
                         self._handle_evaluation_error(numeric_error, context, expr_latex, lhs)
                         return
 
+                    # Check if result is an array
+                    if isinstance(numeric_value, list):
+                        self.is_array = True
+                        self.array_values = [float(v) for v in numeric_value]
+                        context.register_array(lhs, self.array_values, rhs)
+                        if len(self.array_values) <= 5:
+                            self.result = f"Array: [{', '.join(f'{v:.2f}' for v in self.array_values)}]"
+                        else:
+                            first_three = ', '.join(f'{v:.2f}' for v in self.array_values[:3])
+                            self.result = f"Array ({len(self.array_values)} values): [{first_three}, ...]"
                     # Check if result is numeric
-                    if isinstance(numeric_value, (int, float)):
+                    elif isinstance(numeric_value, (int, float)):
                         self.numeric_value = float(numeric_value)
                         self.result = self._format_numeric_value(self.numeric_value)
                     elif hasattr(numeric_value, 'is_real') and numeric_value.is_real:
