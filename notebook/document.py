@@ -367,8 +367,14 @@ class FormulaBlock(Block):
                 "Float": sp.Float,
                 "Rational": sp.Rational,
                 "Symbol": sp.Symbol,
+                "abs": sp.Abs,
+                "sum": sp.Function("sum"),
+                "min": sp.Function("min"),
+                "max": sp.Function("max"),
+                "range": sp.Function("range"),
                 "linspace": sp.Function("linspace"),
                 "arange": sp.Function("arange"),
+                "sweep": sp.Function("sweep"),
             }
             for name, obj in safe_locals.items():
                 context.symbols.setdefault(name, obj)
@@ -380,8 +386,18 @@ class FormulaBlock(Block):
             # Always ensure linspace and arange are Functions (create fresh objects)
             linspace_func = type('linspace', (sp.Function,), {})
             arange_func = type('arange', (sp.Function,), {})
+            sweep_func = type('sweep', (sp.Function,), {})
+            sum_func = type('sum', (sp.Function,), {})
+            min_func = type('min', (sp.Function,), {})
+            max_func = type('max', (sp.Function,), {})
+            range_func = type('range', (sp.Function,), {})
             context.symbols["linspace"] = linspace_func
             context.symbols["arange"] = arange_func
+            context.symbols["sweep"] = sweep_func
+            context.symbols["sum"] = sum_func
+            context.symbols["min"] = min_func
+            context.symbols["max"] = max_func
+            context.symbols["range"] = range_func
 
             return parse_expr(
                 expr,
@@ -415,6 +431,9 @@ class FormulaBlock(Block):
         # Fallback to numeric-only substitutions for symbols.
         for name, value in context.numeric_values.items():
             env.setdefault(name, value)
+        # Also expose arrays as plain lists so helpers como sweep/len trabajen.
+        for name, arr in context.arrays.items():
+            env.setdefault(name, arr.values)
 
         # Normalize caret to python exponent for eval friendliness.
         expr = self._normalize_expression(expression).replace("^", "**")
@@ -717,7 +736,7 @@ class FormulaBlock(Block):
             duration_ms = (perf_counter() - start_time) * 1000
             self.evaluation_time_ms = round(duration_ms, 2)
             substitutions: list[str] = []
-            if self.sympy_expr is not None:
+            if self.sympy_expr is not None and hasattr(self.sympy_expr, "free_symbols"):
                 symbol_names = {str(symbol) for symbol in self.sympy_expr.free_symbols}
                 for name in sorted(symbol_names):
                     if name in context.numeric_values:

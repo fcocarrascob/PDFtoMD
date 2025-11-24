@@ -507,6 +507,25 @@ class NotebookTab(QWidget):
         func_btn.clicked.connect(lambda: self.insert_snippet("f(x) = "))
         layout.addWidget(func_btn)
 
+        # Array/function helpers
+        linspace_btn = QToolButton()
+        linspace_btn.setText("linspace")
+        linspace_btn.setToolTip("Insert linspace(start, stop, num)")
+        linspace_btn.clicked.connect(lambda: self.insert_snippet("linspace( , , )"))
+        layout.addWidget(linspace_btn)
+
+        arange_btn = QToolButton()
+        arange_btn.setText("arange")
+        arange_btn.setToolTip("Insert arange(start, stop, step)")
+        arange_btn.clicked.connect(lambda: self.insert_snippet("arange( , , )"))
+        layout.addWidget(arange_btn)
+
+        sweep_btn = QToolButton()
+        sweep_btn.setText("sweep")
+        sweep_btn.setToolTip("Insert sweep(f, xs)")
+        sweep_btn.clicked.connect(lambda: self.insert_snippet("sweep(f, xs)"))
+        layout.addWidget(sweep_btn)
+
         # Greek symbols quick pick
         self.greek_combo = QComboBox()
         greek_items = ["\\alpha", "\\beta", "\\gamma", "\\delta", "\\phi", "\\theta", "\\lambda", "\\pi", "\\sigma", "\\omega"]

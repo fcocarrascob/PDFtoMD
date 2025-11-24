@@ -194,7 +194,7 @@
     },
     {
       "type": "TextBlock",
-      "raw": "### 3.3 Funciones matem\u00e1ticas adicionales"
+      "raw": "### 3.3 Funciones matemáticas adicionales"
     },
     {
       "type": "FormulaBlock",
@@ -214,11 +214,35 @@
     },
     {
       "type": "TextBlock",
-      "raw": "### 3.4 Arrays con funciones matem\u00e1ticas"
+      "raw": "### 3.4 Arrays con funciones matemáticas"
     },
     {
       "type": "FormulaBlock",
       "raw": "arr10 = linspace(1, exp(1), 4)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 3.5 Barrido de funciones sobre arrays"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "f_lineal(x) = 2*x + 1"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "xs_sweep = [0, 1, 2, 3]"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "ys_sweep = sweep(f_lineal, xs_sweep)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "suma_sweep = sum(ys_sweep)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "max_sweep = max(ys_sweep)"
     },
     {
       "type": "TextBlock",
@@ -234,7 +258,7 @@
     },
     {
       "type": "TextBlock",
-      "raw": "## Verificación Final\n\nSi todas las evaluaciones funcionan correctamente, deberías ver:\n- Tabla **Functions** con las funciones definidas (f, area_rectangulo, g, h, cuadrado, doble, compuesta, momento_inercia)\n- Tabla **Arrays** con todos los arrays (arr1 a arr9, arr_un_elemento, arr_dos_elementos, alturas)\n- Tabla **Variables** con los resultados y constantes"
+      "raw": "## Verificaci?n Final\n\nSi todas las evaluaciones funcionan correctamente, deber?as ver:\n- Tabla **Functions** con las funciones definidas (f, area\\_{rectangulo}, g, h, cuadrado, doble, compuesta, momento\\_{inercia}, f\\_{lineal})\n- Tabla **Arrays** con todos los arrays (arr1 a arr10, arr\\_{un\\_elemento}, arr\\_{dos\\_elementos}, alturas, xs\\_{sweep}, ys\\_{sweep})\n- Tabla **Variables** con los resultados y constantes"
     }
   ]
 }

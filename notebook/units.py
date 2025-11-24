@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from typing import Callable, Iterable
 
 
 def linspace(start: float, stop: float, num: int = 50) -> list[float]:
@@ -59,6 +60,24 @@ def arange(start: float, stop: float, step: float = 1.0) -> list[float]:
     return result
 
 
+def sweep(func: Callable[[float], float], xs: Iterable[float]) -> list[float]:
+    """
+    Apply a scalar function to each value in an iterable and return a list.
+
+    Args:
+        func: Callable that acepta un valor y retorna un valor (numérico).
+        xs: Iterable de valores de entrada.
+    """
+    results = []
+    for x in xs:
+        try:
+            results.append(func(x))
+        except Exception:
+            # Propaga el error para que se registre en el bloque si algo falla.
+            raise
+    return results
+
+
 def math_env() -> dict[str, object]:
     """Safe math helpers exposed to expression evaluation."""
 
@@ -77,6 +96,12 @@ def math_env() -> dict[str, object]:
         "log": math.log,
         "exp": math.exp,
         "pi": math.pi,
+        "sum": sum,
+        "min": min,
+        "max": max,
+        "abs": abs,
+        "range": range,
         "linspace": linspace,
         "arange": arange,
+        "sweep": sweep,
     }

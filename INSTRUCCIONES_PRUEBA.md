@@ -28,8 +28,8 @@ doc.save_html("mi_prueba.html")
 
 ## Resultados esperados
 
-- **Funciones (8):** f, area_rectangulo, g, h, cuadrado, doble, compuesta, momento_inercia.
-- **Arrays (13):** arr1 a arr10, alturas, arr_un_elemento, arr_dos_elementos.
+- **Funciones (9):** f, area_rectangulo, g, h, cuadrado, doble, compuesta, momento_inercia, f_lineal.
+- **Arrays (15):** arr1 a arr10, alturas, arr_un_elemento, arr_dos_elementos, xs_sweep, ys_sweep.
 - **Errores:** No se esperan errores de evaluacion.
 
 ### Detalle de arrays
@@ -46,6 +46,8 @@ doc.save_html("mi_prueba.html")
 - alturas = linspace(0.2, 0.5, 4)
 - arr_un_elemento = linspace(5, 5, 1)
 - arr_dos_elementos = arange(0, 2, 1)
+- xs_sweep = [0, 1, 2, 3]
+- ys_sweep = sweep(f_lineal, xs_sweep)
 
 ## Que revisar en el HTML preview
 - Encabezados y formulas LaTeX renderizados.

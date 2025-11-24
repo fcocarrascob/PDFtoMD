@@ -30,8 +30,8 @@ def test_linspace_and_sweep_numeric_only() -> None:
     context = doc.evaluate()
 
     assert not context.errors
-    assert context.objects["xs"] == [0, 2, 4, 6]
-    assert context.objects["f_vals"] == [0, 4, 16, 36]
+    assert context.arrays["xs"].values == [0, 2, 4, 6]
+    assert context.arrays["f_vals"].values == [0, 4, 16, 36]
 
 
 def test_comprehension_and_range_numeric_only() -> None:
@@ -62,3 +62,21 @@ def test_arange_decimal_step_numeric_only() -> None:
     expected = [0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5]
     arr_record = context.arrays["arr4"]
     assert arr_record.values == pytest.approx(expected)
+
+
+def test_sweep_with_array_literal() -> None:
+    doc = Document(
+        [
+            FormulaBlock("g(x) = 2*x + 1"),
+            FormulaBlock("vals = [0, 1, 2]"),
+            FormulaBlock("out = sweep(g, vals)"),
+            FormulaBlock("out_sum = sum(out)"),
+            FormulaBlock("out_max = max(out)"),
+        ]
+    )
+    context = doc.evaluate()
+
+    assert not context.errors
+    assert context.arrays["out"].values == [1, 3, 5]
+    assert context.numeric_values["out_sum"] == pytest.approx(9.0)
+    assert context.numeric_values["out_max"] == pytest.approx(5.0)
