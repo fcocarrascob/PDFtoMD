@@ -17,6 +17,9 @@ def linspace(start: float, stop: float, num: int = 50) -> list[float]:
     Returns:
         List of evenly spaced values
     """
+    # Convert num to int in case it's passed as a float
+    num = int(num)
+
     if num <= 0:
         return []
     if num == 1:

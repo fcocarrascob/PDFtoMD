@@ -1,0 +1,172 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='utf-8'>
+            
+        <script>
+        window.MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$','$$'], ['\\[','\\]']]
+          },
+          options: {
+            skipHtmlTags: ['script','noscript','style','textarea','pre','code']
+          }
+        };
+        </script>
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+            <style>
+                
+            @page {
+                size: A4;
+                margin: 12mm;
+            }
+            body {
+                font-family: Arial, sans-serif;
+                padding: 24px;
+                background: #eceff4;
+                color: #1f1f1f;
+                display: flex;
+                justify-content: center;
+            }
+            .page {
+                background: #f7f8fa;
+                color: #1f1f1f;
+                max-width: 210mm;
+                min-height: 297mm;
+                width: 100%;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+                border: 1px solid #e5e8ee;
+                border-radius: 6px;
+                padding: 24px;
+                box-sizing: border-box;
+            }
+            .text-block { margin-bottom: 12px; line-height: 1.5; }
+            .text-block h1, .text-block h2, .text-block h3, .text-block h4, .text-block h5, .text-block h6 {
+                margin: 0 0 8px 0;
+                font-weight: 700;
+                color: #2a82da;
+            }
+            .text-block ul, .text-block ol {
+                padding-left: 20px;
+                margin: 6px 0 12px 0;
+            }
+            .text-block li { margin-bottom: 4px; }
+            .text-block code {
+                background: #ffffff;
+                border: 1px solid #dbe1ea;
+                padding: 2px 4px;
+                border-radius: 4px;
+                font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            }
+            .formula-block { margin-bottom: 16px; padding: 12px; background: #ffffff; border-radius: 6px; border: 1px solid #dbe1ea; }
+            .formula-block.error { border-color: #d9534f; background: #fdecea; }
+            .formula-input { font-size: 18px; margin-bottom: 6px; }
+            .formula-result { color: #2a82da; font-weight: bold; }
+            .formula-block.error .formula-result { color: #d9534f; }
+            .function-table, .variable-table { margin-top: 24px; background: #ffffff; padding: 12px; border-radius: 6px; border: 1px solid #dbe1ea; }
+            .function-table h3, .variable-table h3 { margin-top: 0; }
+            .function-table table, .variable-table table { width: 100%; border-collapse: collapse; }
+            .function-table th, .function-table td, .variable-table th, .variable-table td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #dbe1ea; }
+            .function-table th, .variable-table th { color: #1f1f1f; opacity: 0.8; }
+            .error-panel, .log-panel { margin-top: 16px; background: #ffffff; padding: 12px; border-radius: 6px; border: 1px solid #dbe1ea; }
+            .error-panel h3 { margin-top: 0; color: #d9534f; }
+            .log-panel h3 { margin-top: 0; color: #2a82da; }
+            .error-panel ul { padding-left: 18px; margin: 8px 0; }
+            .error-panel li { margin-bottom: 6px; }
+            .log-panel table { width: 100%; border-collapse: collapse; }
+            .log-panel th, .log-panel td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #dbe1ea; }
+            .log-panel th { color: #1f1f1f; opacity: 0.8; }
+        
+            </style>
+        </head>
+        <body>
+            <div class='page'>
+                <div class='text-block'><h1>Documento de Prueba: Fase 1 y Fase 2</h1>
+<p>Este documento prueba todas las funcionalidades implementadas en Fase 1 (funciones) y Fase 2 (arrays).</p>
+</div>
+<div class='text-block'><h2>Fase 1: Funciones Definidas por Usuario</h2>
+</div>
+<div class='text-block'><h3>1.1 Función simple de un parámetro</h3>
+</div>
+<div class='formula-block'><div class='formula-input'>$$ f(x) = 1 + x^{2} + 2 \cdot x $$</div><div class='formula-result'>= Function f(x) defined</div></div>
+<div class='formula-block'><div class='formula-input'>$$ resultado1 = f{\left(3 \right)} $$</div><div class='formula-result'>= 16.00</div></div>
+<div class='text-block'><h3>1.2 Función con múltiples parámetros</h3>
+</div>
+<div class='formula-block'><div class='formula-input'>$$ area_rectangulo(base, altura) = altura \cdot base $$</div><div class='formula-result'>= Function area_rectangulo(base, altura) defined</div></div>
+<div class='formula-block'><div class='formula-input'>$$ A = \operatorname{area}_{rectangulo}{\left(5,3 \right)} $$</div><div class='formula-result'>= 15.00</div></div>
+<div class='text-block'><h3>1.3 Función con operaciones trigonométricas</h3>
+</div>
+<div class='formula-block'><div class='formula-input'>$$ g(t) = \cos{\left(t \right)} + \sin{\left(t \right)} $$</div><div class='formula-result'>= Function g(t) defined</div></div>
+<div class='formula-block'><div class='formula-input'>$$ resultado2 = g{\left(\frac{\pi}{4} \right)} $$</div><div class='formula-result'>= 1.41</div></div>
+<div class='text-block'><h3>1.4 Función que usa variables globales</h3>
+</div>
+<div class='formula-block'><div class='formula-input'>$$ constante = 10.0 $$</div><div class='formula-result'>= 10.00</div></div>
+<div class='formula-block'><div class='formula-input'>$$ h(x) = constante + x $$</div><div class='formula-result'>= Function h(x) defined</div></div>
+<div class='formula-block'><div class='formula-input'>$$ resultado3 = h{\left(5 \right)} $$</div><div class='formula-result'>= h(5)</div></div>
+<div class='text-block'><h3>1.5 Composición de funciones</h3>
+</div>
+<div class='formula-block'><div class='formula-input'>$$ cuadrado(x) = x^{2} $$</div><div class='formula-result'>= Function cuadrado(x) defined</div></div>
+<div class='formula-block'><div class='formula-input'>$$ doble(x) = 2 \cdot x $$</div><div class='formula-result'>= Function doble(x) defined</div></div>
+<div class='formula-block'><div class='formula-input'>$$ compuesta(x) = \operatorname{cuadrado}{\left(\operatorname{doble}{\left(x \right)} \right)} $$</div><div class='formula-result'>= Function compuesta(x) defined</div></div>
+<div class='formula-block'><div class='formula-input'>$$ resultado4 = \operatorname{compuesta}{\left(3 \right)} $$</div><div class='formula-result'>= compuesta(3)</div></div>
+<div class='text-block'><h2>Fase 2: Arrays con linspace y arange</h2>
+</div>
+<div class='text-block'><h3>2.1 linspace básico - Array pequeño (visualización completa)</h3>
+</div>
+<div class='formula-block'><div class='formula-input'>$$ arr1 = \operatorname{linspace}{\left(0,10,5 \right)} $$</div><div class='formula-result'>= Array: [0.00, 2.50, 5.00, 7.50, 10.00]</div></div>
+<div class='text-block'><h3>2.2 arange básico - Array pequeño</h3>
+</div>
+<div class='formula-block'><div class='formula-input'>$$ arr2 = \operatorname{arange}{\left(0,10,2 \right)} $$</div><div class='formula-result'>= Array: [0.00, 2.00, 4.00, 6.00, 8.00]</div></div>
+<div class='text-block'><h3>2.3 linspace con valores negativos</h3>
+</div>
+<div class='formula-block'><div class='formula-input'>$$ arr3 = \operatorname{linspace}{\left(-5,5,5 \right)} $$</div><div class='formula-result'>= Array: [-5.00, -2.50, 0.00, 2.50, 5.00]</div></div>
+<div class='text-block'><h3>2.4 arange con paso decimal</h3>
+</div>
+<div class='formula-block error'><div class='formula-input'>$$ arr4 = arange(0, 5, 0.5) $$</div><div class='formula-result'>= Error: &#x27;Symbol&#x27; object is not callable</div></div>
+<div class='text-block'><h3>2.5 linspace grande (visualización truncada)</h3>
+</div>
+<div class='formula-block'><div class='formula-input'>$$ arr5 = \operatorname{linspace}{\left(0,100,50 \right)} $$</div><div class='formula-result'>= Array (50 values): [0.00, 2.04, 4.08, ...]</div></div>
+<div class='text-block'><h3>2.6 Arrays usando variables</h3>
+</div>
+<div class='formula-block'><div class='formula-input'>$$ inicio = 0.0 $$</div><div class='formula-result'>= 0.00</div></div>
+<div class='formula-block'><div class='formula-input'>$$ fin = 20.0 $$</div><div class='formula-result'>= 20.00</div></div>
+<div class='formula-block'><div class='formula-input'>$$ puntos = 11.0 $$</div><div class='formula-result'>= 11.00</div></div>
+<div class='formula-block'><div class='formula-input'>$$ arr6 = \operatorname{linspace}{\left(inicio,fin,puntos \right)} $$</div><div class='formula-result'>= Array (11 values): [0.00, 2.00, 4.00, ...]</div></div>
+<div class='text-block'><h3>2.7 Arrays con expresiones matemáticas</h3>
+</div>
+<div class='formula-block'><div class='formula-input'>$$ arr7 = \operatorname{linspace}{\left(6,25,10 \right)} $$</div><div class='formula-result'>= Array (10 values): [6.00, 8.11, 10.22, ...]</div></div>
+<div class='formula-block'><div class='formula-input'>$$ arr8 = \operatorname{arange}{\left(0,2 \cdot \pi,\frac{\pi}{4} \right)} $$</div><div class='formula-result'>= Array (8 values): [0.00, 0.79, 1.57, ...]</div></div>
+<div class='text-block'><h3>2.8 arange con paso negativo (descendente)</h3>
+</div>
+<div class='formula-block'><div class='formula-input'>$$ arr9 = \operatorname{arange}{\left(10,0,-1 \right)} $$</div><div class='formula-result'>= Array (10 values): [10.00, 9.00, 8.00, ...]</div></div>
+<div class='text-block'><h2>Combinación Fase 1 + Fase 2</h2>
+</div>
+<div class='text-block'><h3>3.1 Función con constantes y arrays para análisis</h3>
+</div>
+<div class='formula-block'><div class='formula-input'>$$ L = 5.0 $$</div><div class='formula-result'>= 5.00</div></div>
+<div class='formula-block'><div class='formula-input'>$$ E = 200000.0 $$</div><div class='formula-result'>= 200000.00</div></div>
+<div class='formula-block'><div class='formula-input'>$$ momento_inercia(b, h) = \frac{b \cdot h^{3}}{12} $$</div><div class='formula-result'>= Function momento_inercia(b, h) defined</div></div>
+<div class='formula-block error'><div class='formula-input'>$$ I1 = momento_inercia(0.2, 0.3) $$</div><div class='formula-result'>= Error: &#x27;Symbol&#x27; object is not callable</div></div>
+<div class='formula-block error'><div class='formula-input'>$$ alturas = linspace(0.2, 0.5, 4) $$</div><div class='formula-result'>= Error: &#x27;Symbol&#x27; object is not callable</div></div>
+<div class='text-block'><h3>3.2 Edge Cases</h3>
+</div>
+<div class='formula-block'><div class='formula-input'>$$ arr_un_elemento = \operatorname{linspace}{\left(5,5,1 \right)} $$</div><div class='formula-result'>= Array: [5.00]</div></div>
+<div class='formula-block'><div class='formula-input'>$$ arr_dos_elementos = \operatorname{arange}{\left(0,2,1 \right)} $$</div><div class='formula-result'>= Array: [0.00, 1.00]</div></div>
+<div class='text-block'><h2>Verificación Final</h2>
+<p>Si todas las evaluaciones funcionan correctamente, deberías ver:</p>
+<ul>
+<li>Tabla <strong>Functions</strong> con las funciones definidas (f, area_rectangulo, g, h, cuadrado, doble, compuesta, momento_inercia)</li>
+<li>Tabla <strong>Arrays</strong> con todos los arrays (arr1 a arr9, arr_un_elemento, arr_dos_elementos, alturas)</li>
+<li>Tabla <strong>Variables</strong> con los resultados y constantes</li>
+</ul>
+</div>
+<div class='function-table'><h3>Functions</h3><table><thead><tr><th>Signature</th><th>Expression</th></tr></thead><tbody><tr><td>f(x)</td><td>$$ x**2 + 2*x + 1 $$</td></tr><tr><td>area_rectangulo(base, altura)</td><td>$$ base * altura $$</td></tr><tr><td>g(t)</td><td>$$ sin(t) + cos(t) $$</td></tr><tr><td>h(x)</td><td>$$ x + constante $$</td></tr><tr><td>cuadrado(x)</td><td>$$ x**2 $$</td></tr><tr><td>doble(x)</td><td>$$ 2*x $$</td></tr><tr><td>compuesta(x)</td><td>$$ cuadrado(doble(x)) $$</td></tr><tr><td>momento_inercia(b, h)</td><td>$$ b * h**3 / 12 $$</td></tr></tbody></table></div>
+<div class='variable-table'><h3>Variables</h3><table><thead><tr><th>Name</th><th>Expression</th><th>Value</th></tr></thead><tbody><tr><td>resultado1</td><td>$$ f{\left(3 \right)} $$</td><td>16.00</td></tr><tr><td>A</td><td>$$ \operatorname{area}_{rectangulo}{\left(5,3 \right)} $$</td><td>15.00</td></tr><tr><td>resultado2</td><td>$$ g{\left(\frac{\pi}{4} \right)} $$</td><td>1.41</td></tr><tr><td>constante</td><td>$$ 10.0 $$</td><td>10.00</td></tr><tr><td>resultado3</td><td>$$ h{\left(5 \right)} $$</td><td></td></tr><tr><td>resultado4</td><td>$$ \operatorname{compuesta}{\left(3 \right)} $$</td><td></td></tr><tr><td>arr1</td><td>$$ \operatorname{linspace}{\left(0,10,5 \right)} $$</td><td></td></tr><tr><td>arr2</td><td>$$ \operatorname{arange}{\left(0,10,2 \right)} $$</td><td></td></tr><tr><td>arr3</td><td>$$ \operatorname{linspace}{\left(-5,5,5 \right)} $$</td><td></td></tr><tr><td>arr5</td><td>$$ \operatorname{linspace}{\left(0,100,50 \right)} $$</td><td></td></tr><tr><td>inicio</td><td>$$ 0.0 $$</td><td>0.00</td></tr><tr><td>fin</td><td>$$ 20.0 $$</td><td>20.00</td></tr><tr><td>puntos</td><td>$$ 11.0 $$</td><td>11.00</td></tr><tr><td>arr6</td><td>$$ \operatorname{linspace}{\left(inicio,fin,puntos \right)} $$</td><td></td></tr><tr><td>arr7</td><td>$$ \operatorname{linspace}{\left(6,25,10 \right)} $$</td><td></td></tr><tr><td>arr8</td><td>$$ \operatorname{arange}{\left(0,2 \cdot \pi,\frac{\pi}{4} \right)} $$</td><td></td></tr><tr><td>arr9</td><td>$$ \operatorname{arange}{\left(10,0,-1 \right)} $$</td><td></td></tr><tr><td>L</td><td>$$ 5.0 $$</td><td>5.00</td></tr><tr><td>E</td><td>$$ 200000.0 $$</td><td>200000.00</td></tr><tr><td>arr_un_elemento</td><td>$$ \operatorname{linspace}{\left(5,5,1 \right)} $$</td><td></td></tr><tr><td>arr_dos_elementos</td><td>$$ \operatorname{arange}{\left(0,2,1 \right)} $$</td><td></td></tr></tbody></table></div>
+<div class='error-panel'><h3>Errores de evaluación</h3><ul><li><strong>TypeError</strong> (6aba70f375df40a185912f995c95381c): &#x27;Symbol&#x27; object is not callable</li><li><strong>TypeError</strong> (541be5c431e24ed1a708f23c5aac7cfb): &#x27;Symbol&#x27; object is not callable</li><li><strong>TypeError</strong> (f051d13df8224adbb860b817e85f2ddf): &#x27;Symbol&#x27; object is not callable</li></ul></div>
+<div class='log-panel'><h3>Registro de evaluación</h3><table><thead><tr><th>Bloque</th><th>Expresión</th><th>Tiempo</th><th>Sustituciones</th></tr></thead><tbody><tr><td>953ca8</td><td>f(x) = x**2 + 2*x + 1</td><td>1.47 ms</td><td>-</td></tr><tr><td>f4c83e</td><td>resultado1 = f(3)</td><td>0.61 ms</td><td>-</td></tr><tr><td>7d9728</td><td>area_rectangulo(base, altura) = base * altura</td><td>1.09 ms</td><td>-</td></tr><tr><td>cd57a3</td><td>A = area_rectangulo(5, 3)</td><td>0.65 ms</td><td>-</td></tr><tr><td>a0ca8e</td><td>g(t) = sin(t) + cos(t)</td><td>1.10 ms</td><td>-</td></tr><tr><td>d95ffe</td><td>resultado2 = g(pi/4)</td><td>0.66 ms</td><td>-</td></tr><tr><td>dcc989</td><td>constante = 10</td><td>0.08 ms</td><td>-</td></tr><tr><td>123b6e</td><td>h(x) = x + constante</td><td>0.93 ms</td><td>constante=10.00</td></tr><tr><td>160bcd</td><td>resultado3 = h(5)</td><td>0.83 ms</td><td>-</td></tr><tr><td>6db08e</td><td>cuadrado(x) = x**2</td><td>0.81 ms</td><td>-</td></tr><tr><td>14fcb7</td><td>doble(x) = 2*x</td><td>0.87 ms</td><td>-</td></tr><tr><td>94c73c</td><td>compuesta(x) = cuadrado(doble(x))</td><td>0.85 ms</td><td>-</td></tr><tr><td>6b2cf6</td><td>resultado4 = compuesta(3)</td><td>1.51 ms</td><td>-</td></tr><tr><td>ded542</td><td>arr1 = linspace(0, 10, 5)</td><td>0.75 ms</td><td>-</td></tr><tr><td>bce336</td><td>arr2 = arange(0, 10, 2)</td><td>0.80 ms</td><td>-</td></tr><tr><td>2bef5d</td><td>arr3 = linspace(-5, 5, 5)</td><td>0.67 ms</td><td>-</td></tr><tr><td>6aba70</td><td>arr4 = arange(0, 5, 0.5)</td><td>0.57 ms</td><td>-</td></tr><tr><td>6bd8a4</td><td>arr5 = linspace(0, 100, 50)</td><td>0.97 ms</td><td>-</td></tr><tr><td>3c974f</td><td>inicio = 0</td><td>0.09 ms</td><td>-</td></tr><tr><td>7827ef</td><td>fin = 20</td><td>0.08 ms</td><td>-</td></tr><tr><td>8ebe60</td><td>puntos = 11</td><td>0.06 ms</td><td>-</td></tr><tr><td>aaba7a</td><td>arr6 = linspace(inicio, fin, puntos)</td><td>0.69 ms</td><td>fin=20.00, inicio=0.00, puntos=11.00</td></tr><tr><td>b79aa7</td><td>arr7 = linspace(2*3, 5**2, 10)</td><td>0.69 ms</td><td>-</td></tr><tr><td>110cd7</td><td>arr8 = arange(0, 2*pi, pi/4)</td><td>0.79 ms</td><td>-</td></tr><tr><td>ab99f4</td><td>arr9 = arange(10, 0, -1)</td><td>0.67 ms</td><td>-</td></tr><tr><td>9cc270</td><td>L = 5.0</td><td>0.07 ms</td><td>-</td></tr><tr><td>34b9ee</td><td>E = 200000</td><td>0.05 ms</td><td>-</td></tr><tr><td>44944b</td><td>momento_inercia(b, h) = b * h**3 / 12</td><td>1.15 ms</td><td>-</td></tr><tr><td>541be5</td><td>I1 = momento_inercia(0.2, 0.3)</td><td>0.55 ms</td><td>-</td></tr><tr><td>f051d1</td><td>alturas = linspace(0.2, 0.5, 4)</td><td>0.53 ms</td><td>-</td></tr><tr><td>94e7b1</td><td>arr_un_elemento = linspace(5, 5, 1)</td><td>0.82 ms</td><td>-</td></tr><tr><td>21b424</td><td>arr_dos_elementos = arange(0, 2, 1)</td><td>0.62 ms</td><td>-</td></tr></tbody></table></div>
+            </div>
+        </body>
+        </html>
+        
