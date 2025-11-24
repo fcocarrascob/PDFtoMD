@@ -254,6 +254,252 @@
     },
     {
       "type": "TextBlock",
+      "raw": "## Punto 1b: tramo intermedio (c = 120 mm)",
+      "id": "a083c6f21a1d4c6ca5c9fc95fa8f01ea"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "c4 = 120 mm",
+      "id": "d94dea5b0b1649dd902ed49f0e6e67f3",
+      "result": "120.00 mm",
+      "latex": "c4 = 120.0\\;mm",
+      "numeric_value": 120.0,
+      "is_assignment": true,
+      "variable_name": "c4",
+      "units": "mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "a4 = beta1 * c4",
+      "id": "e392e6cd2d024f99ab6ec97bb8801d2f",
+      "result": "102.00 mm",
+      "latex": "a4 = \\beta_{1} \\cdot c_{4}\\;mm",
+      "numeric_value": 102.0,
+      "is_assignment": true,
+      "variable_name": "a4",
+      "units": "mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Cc4 = 0.85 * fc * b * a4",
+      "id": "7f1d0067ef2c40c4acffaf3fb37d3da1",
+      "result": "0.73 MPa*m²",
+      "latex": "Cc4 = 0.85 \\cdot fc \\cdot b \\cdot a_{4}\\;MPa*m²",
+      "numeric_value": 0.7282800000000001,
+      "is_assignment": true,
+      "variable_name": "Cc4",
+      "units": "MPa*m²"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Cs4 = As_c * fy",
+      "id": "3b7c7ea98d5f4af594c116df230389f9",
+      "result": "337784.04 m²*Pa",
+      "latex": "Cs4 = As_{c} \\cdot fy\\;m²*Pa",
+      "numeric_value": 337784.0421139746,
+      "is_assignment": true,
+      "variable_name": "Cs4",
+      "units": "m²*Pa"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "T4 = As_t * fy",
+      "id": "7ec40f15fdde4518a6ab17137c55d6e7",
+      "result": "337784.04 m²*Pa",
+      "latex": "T4 = As_{t} \\cdot fy\\;m²*Pa",
+      "numeric_value": 337784.0421139746,
+      "is_assignment": true,
+      "variable_name": "T4",
+      "units": "m²*Pa"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Pn4 = phi * (Cc4 + Cs4 - T4)",
+      "id": "62d704d893cd45faac1bc7922fcfe6a5",
+      "result": "473.38 kPa*m²",
+      "latex": "Pn4 = \\phi \\cdot \\left(Cc_{4} + Cs_{4} - T_{4}\\right)\\;kPa*m²",
+      "numeric_value": 473.3820000000001,
+      "is_assignment": true,
+      "variable_name": "Pn4",
+      "units": "kPa*m²"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Mn4 = phi * (Cc4 * (d_t - a4/2) + Cs4 * d_c - T4 * d_t)",
+      "id": "f3388aa55d0f4bd1bbd1a8cebaac3fd9",
+      "result": "101.12 kPa*m³",
+      "latex": "Mn4 = \\phi \\cdot \\left(Cc_{4} \\cdot \\left(d_{t} - \\frac{a_{4}}{2}\\right) + Cs_{4} \\cdot d_{c} - T_{4} \\cdot d_{t}\\right)\\;kPa*m³",
+      "numeric_value": 101.1240925408703,
+      "is_assignment": true,
+      "variable_name": "Mn4",
+      "units": "kPa*m³"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "## Punto 1c: tramo intermedio (c = 180 mm)",
+      "id": "8719d5eeae034100aae468e58fc14ff9"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "c5 = 180 mm",
+      "id": "d9d9bba70b2d42998a5f5031fc7780fd",
+      "result": "180.00 mm",
+      "latex": "c5 = 180.0\\;mm",
+      "numeric_value": 180.0,
+      "is_assignment": true,
+      "variable_name": "c5",
+      "units": "mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "a5 = beta1 * c5",
+      "id": "55fe8f874ec0447fafb2021a7ccacb5d",
+      "result": "153.00 mm",
+      "latex": "a5 = \\beta_{1} \\cdot c_{5}\\;mm",
+      "numeric_value": 153.0,
+      "is_assignment": true,
+      "variable_name": "a5",
+      "units": "mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Cc5 = 0.85 * fc * b * a5",
+      "id": "a0f4bd48c5a54886adce1c7f098db51b",
+      "result": "1.09 MPa*m²",
+      "latex": "Cc5 = 0.85 \\cdot fc \\cdot b \\cdot a_{5}\\;MPa*m²",
+      "numeric_value": 1.09242,
+      "is_assignment": true,
+      "variable_name": "Cc5",
+      "units": "MPa*m²"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Cs5 = As_c * fy",
+      "id": "5f04d6bc50094f95ad76e60bdc365cd4",
+      "result": "337784.04 m²*Pa",
+      "latex": "Cs5 = As_{c} \\cdot fy\\;m²*Pa",
+      "numeric_value": 337784.0421139746,
+      "is_assignment": true,
+      "variable_name": "Cs5",
+      "units": "m²*Pa"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "T5 = As_t * fy",
+      "id": "701927b972fa4565a07545f6fce33f4c",
+      "result": "337784.04 m²*Pa",
+      "latex": "T5 = As_{t} \\cdot fy\\;m²*Pa",
+      "numeric_value": 337784.0421139746,
+      "is_assignment": true,
+      "variable_name": "T5",
+      "units": "m²*Pa"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Pn5 = phi * (Cc5 + Cs5 - T5)",
+      "id": "504df3e4ba044af6a58df3299b384308",
+      "result": "710.07 kPa*m²",
+      "latex": "Pn5 = \\phi \\cdot \\left(Cc_{5} + Cs_{5} - T_{5}\\right)\\;kPa*m²",
+      "numeric_value": 710.073,
+      "is_assignment": true,
+      "variable_name": "Pn5",
+      "units": "kPa*m²"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Mn5 = phi * (Cc5 * (d_t - a5/2) + Cs5 * d_c - T5 * d_t)",
+      "id": "2750850c7b5b4a7f9d202af9bbf28a89",
+      "result": "177.93 kPa*m³",
+      "latex": "Mn5 = \\phi \\cdot \\left(Cc_{5} \\cdot \\left(d_{t} - \\frac{a_{5}}{2}\\right) + Cs_{5} \\cdot d_{c} - T_{5} \\cdot d_{t}\\right)\\;kPa*m³",
+      "numeric_value": 177.93032204087027,
+      "is_assignment": true,
+      "variable_name": "Mn5",
+      "units": "kPa*m³"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "## Punto 2b: acercamiento a balance (c = 250 mm)",
+      "id": "68235a116eb14494a1f9d0c5d82d5418"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "c6 = 250 mm",
+      "id": "0a6fa1635c624b068c5470a097ed29af",
+      "result": "250.00 mm",
+      "latex": "c6 = 250.0\\;mm",
+      "numeric_value": 250.0,
+      "is_assignment": true,
+      "variable_name": "c6",
+      "units": "mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "a6 = beta1 * c6",
+      "id": "e8f2f182a9804c52ad8b3086f2b085a2",
+      "result": "212.50 mm",
+      "latex": "a6 = \\beta_{1} \\cdot c_{6}\\;mm",
+      "numeric_value": 212.5,
+      "is_assignment": true,
+      "variable_name": "a6",
+      "units": "mm"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Cc6 = 0.85 * fc * b * a6",
+      "id": "b6ed7af5c1e542248626039ca0fe1b72",
+      "result": "1.52 MPa*m²",
+      "latex": "Cc6 = 0.85 \\cdot fc \\cdot b \\cdot a_{6}\\;MPa*m²",
+      "numeric_value": 1.517225,
+      "is_assignment": true,
+      "variable_name": "Cc6",
+      "units": "MPa*m²"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Cs6 = As_c * fy",
+      "id": "b34bfac7afc4422fa77e5625ffb77141",
+      "result": "337784.04 m²*Pa",
+      "latex": "Cs6 = As_{c} \\cdot fy\\;m²*Pa",
+      "numeric_value": 337784.0421139746,
+      "is_assignment": true,
+      "variable_name": "Cs6",
+      "units": "m²*Pa"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "T6 = As_t * fy",
+      "id": "bf4647ff36404cfab56be3615a5d2b68",
+      "result": "337784.04 m²*Pa",
+      "latex": "T6 = As_{t} \\cdot fy\\;m²*Pa",
+      "numeric_value": 337784.0421139746,
+      "is_assignment": true,
+      "variable_name": "T6",
+      "units": "m²*Pa"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Pn6 = phi * (Cc6 + Cs6 - T6)",
+      "id": "d8ef4632d0744b74a2b5f07b15f373c3",
+      "result": "986.21 kPa*m²",
+      "latex": "Pn6 = \\phi \\cdot \\left(Cc_{6} + Cs_{6} - T_{6}\\right)\\;kPa*m²",
+      "numeric_value": 986.2125,
+      "is_assignment": true,
+      "variable_name": "Pn6",
+      "units": "kPa*m²"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Mn6 = phi * (Cc6 * (d_t - a6/2) + Cs6 * d_c - T6 * d_t)",
+      "id": "cc6dc61b03484b1e921a84ba1de6b225",
+      "result": "252.28 kPa*m³",
+      "latex": "Mn6 = \\phi \\cdot \\left(Cc_{6} \\cdot \\left(d_{t} - \\frac{a_{6}}{2}\\right) + Cs_{6} \\cdot d_{c} - T_{6} \\cdot d_{t}\\right)\\;kPa*m³",
+      "numeric_value": 252.28088241587028,
+      "is_assignment": true,
+      "variable_name": "Mn6",
+      "units": "kPa*m³"
+    },
+    {
+      "type": "TextBlock",
       "raw": "## Punto 2: condición balanceada aproximada",
       "id": "a3eee9456aa44b4bafa1ba5a7bfb0555"
     },
@@ -445,6 +691,72 @@
     },
     {
       "type": "FormulaBlock",
+      "raw": "Pn4_kN = Pn4.to(kN)",
+      "id": "a8238e77a5bf4cbfa2a9eb29ad47ee6c",
+      "result": "473.38 kN",
+      "latex": "Pn4_kN = Pn4.to(kN)",
+      "numeric_value": 473.3820000000001,
+      "is_assignment": true,
+      "variable_name": "Pn4_kN",
+      "units": "kN"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Mn4_kNm = Mn4.to(kN*m)",
+      "id": "f912a92b6b5f4384b8cb4d5f9b02f12f",
+      "result": "101.12 kN*m",
+      "latex": "Mn4_kNm = Mn4.to(kN*m)",
+      "numeric_value": 101.1240925408703,
+      "is_assignment": true,
+      "variable_name": "Mn4_kNm",
+      "units": "kN*m"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Pn5_kN = Pn5.to(kN)",
+      "id": "84185d855ad24894b2072727edead83c",
+      "result": "710.07 kN",
+      "latex": "Pn5_kN = Pn5.to(kN)",
+      "numeric_value": 710.073,
+      "is_assignment": true,
+      "variable_name": "Pn5_kN",
+      "units": "kN"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Mn5_kNm = Mn5.to(kN*m)",
+      "id": "a285c076b6ce4d7c8b72e3fc8afb778d",
+      "result": "177.93 kN*m",
+      "latex": "Mn5_kNm = Mn5.to(kN*m)",
+      "numeric_value": 177.93032204087027,
+      "is_assignment": true,
+      "variable_name": "Mn5_kNm",
+      "units": "kN*m"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Pn6_kN = Pn6.to(kN)",
+      "id": "43c28f3b475d436096d8930d9e9b85ed",
+      "result": "986.21 kN",
+      "latex": "Pn6_kN = Pn6.to(kN)",
+      "numeric_value": 986.2125,
+      "is_assignment": true,
+      "variable_name": "Pn6_kN",
+      "units": "kN"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Mn6_kNm = Mn6.to(kN*m)",
+      "id": "8f6e6d69e7a24a92b642d2b0539cf043",
+      "result": "252.28 kN*m",
+      "latex": "Mn6_kNm = Mn6.to(kN*m)",
+      "numeric_value": 252.28088241587028,
+      "is_assignment": true,
+      "variable_name": "Mn6_kNm",
+      "units": "kN*m"
+    },
+    {
+      "type": "FormulaBlock",
       "raw": "Pn2_kN = Pn2.to(kN)",
       "id": "29c86c63981544bcb107b098184b6c07",
       "result": "1.05 MN",
@@ -489,7 +801,7 @@
     },
     {
       "type": "TextBlock",
-      "raw": "Los pares (Pn, Mn) en kN y kN·m están dados por las variables *_kN y *_kNm arriba. Puedes copiar estos valores para graficar el diagrama.",
+      "raw": "Los pares (Pn, Mn) en kN y kN·m están dados por las variables *_kN y *_kNm arriba (incluyendo los puntos intermedios Pn4–Pn6). Puedes copiar estos valores para graficar el diagrama.",
       "id": "58d9e2b376944b4a914d52ce1451b06f"
     }
   ]
