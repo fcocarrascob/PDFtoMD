@@ -19,12 +19,12 @@ def load_fixture(name: str) -> dict:
         return json.load(handle)
 
 
-def test_assignment_with_units_renders_fraction():
+def test_assignment_renders_fraction():
     payload = {
         "version": 1,
         "blocks": [
-            {"type": "FormulaBlock", "raw": "fc = 30 MPa"},
-            {"type": "FormulaBlock", "raw": "b = 300 mm"},
+            {"type": "FormulaBlock", "raw": "fc = 30"},
+            {"type": "FormulaBlock", "raw": "b = 300"},
             {"type": "FormulaBlock", "raw": "k = 1/(2*0.85*fc*b)"},
         ],
     }
@@ -45,3 +45,17 @@ def test_mul_symbol_used_between_symbols_and_numbers():
     assert "\\cdot" in block.latex
     # Should not collapse symbols; expect separators between each factor.
     assert "phi" in block.latex and "fc" in block.latex and "b" in block.latex
+
+
+def test_arrays_render_in_table():
+    doc = Document(
+        [
+            FormulaBlock("arr = linspace(0, 4, 3)"),
+        ]
+    )
+    html = doc.to_html()
+
+    assert "<h3>Arrays</h3>" in html
+    assert "arr" in html
+    # values should be formatted with two decimals
+    assert "0.00" in html and "4.00" in html

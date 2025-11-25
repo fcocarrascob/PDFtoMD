@@ -1,0 +1,372 @@
+{
+  "blocks": [
+    {
+      "type": "TextBlock",
+      "raw": "# Documento de Prueba: Fase 1 y Fase 2\n\nEste documento prueba todas las funcionalidades implementadas en Fase 1 (funciones) y Fase 2 (arrays)."
+    },
+    {
+      "type": "TextBlock",
+      "raw": "## Fase 1: Funciones Definidas por Usuario"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 1.1 Función simple de un parámetro"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "f(x) = x**2 + 2*x + 1"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "resultado1 = f(3)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 1.2 Función con múltiples parámetros"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "area_rectangulo(base, altura) = base * altura"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "A = area_rectangulo(5, 3)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 1.3 Función con operaciones trigonométricas"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "g(t) = sin(t) + cos(t)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "resultado2 = g(pi/4)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 1.4 Función que usa variables globales"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "constante = 10"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "h(x) = x + constante"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "resultado3 = h(5)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 1.5 Composición de funciones"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "cuadrado(x) = x**2"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "doble(x) = 2*x"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "compuesta(x) = cuadrado(doble(x))"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "resultado4 = compuesta(3)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "## Fase 2: Arrays con linspace y arange"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 2.1 linspace básico - Array pequeño (visualización completa)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "arr1 = linspace(0, 10, 5)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 2.2 arange básico - Array pequeño"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "arr2 = arange(0, 10, 2)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 2.3 linspace con valores negativos"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "arr3 = linspace(-5, 5, 5)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 2.4 arange con paso decimal"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "arr4 = arange(0, 5, 0.5)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 2.5 linspace grande (visualización truncada)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "arr5 = linspace(0, 100, 50)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 2.6 Arrays usando variables"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "inicio = 0"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "fin = 20"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "puntos = 11"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "arr6 = linspace(inicio, fin, puntos)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 2.7 Arrays con expresiones matemáticas"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "arr7 = linspace(2*3, 5**2, 10)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "arr8 = arange(0, 2*pi, pi/4)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 2.8 arange con paso negativo (descendente)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "arr9 = arange(10, 0, -1)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "## Combinación Fase 1 + Fase 2"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 3.1 Función con constantes y arrays para análisis"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "L = 5.0"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "E = 200000"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "momento_inercia(b, h) = b * h**3 / 12"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "I1 = momento_inercia(0.2, 0.3)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "alturas = linspace(0.2, 0.5, 4)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 3.3 Funciones matemáticas adicionales"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "raiz_simple = sqrt(16)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "log_natural = log(100)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "exponencial = exp(1)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "tan_pi4 = tan(pi/4)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 3.4 Arrays con funciones matemáticas"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "arr10 = linspace(1, exp(1), 4)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 3.5 Barrido de funciones sobre arrays"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "f_lineal(x) = 2*x + 1"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "xs_sweep = [0, 1, 2, 3]"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "ys_sweep = sweep(f_lineal, xs_sweep)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "suma_sweep = sum(ys_sweep)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "max_sweep = max(ys_sweep)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 3.2 Edge Cases"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "arr_un_elemento = linspace(5, 5, 1)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "arr_dos_elementos = arange(0, 2, 1)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 3.6 Condicionales (if/elif/else)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "x_cond = -3"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "resultado_cond = 10 if x_cond > 0 else -5"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "signo = (1) if (x_cond > 0) else ((-1) if (x_cond < 0) else (0))"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 3.7 Condicionales multilínea y operadores lógicos"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "resultado_cond_multilinea = if x_cond > 5:\n    20\nelif x_cond == -3:\n    -30\nelse:\n    -1"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "alerta_negativos = And(x_cond < 0, Not(x_cond == -3))"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "acceso_otorgado = Or((x_cond > 0), And(x_cond == -3, Not(x_cond < -10)))"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 3.7 Expresiones lógicas\n\nEjemplos inline: (A) and (B), not (A)."
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "A_logico = True"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "B_logico = False"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "ambas = (A_logico) and (B_logico)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "cualquiera = (A_logico) or (B_logico)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "negado = not (A_logico)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "### 3.8 Mezclas lógicas y arrays"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "es_positivo(x) = x > 0"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "es_no_cero(x) = Not(x == 0)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "valores_mix = linspace(-2, 2, 5)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "positivos_mix = sweep(es_positivo, valores_mix)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "todos_positivos = And(positivos_mix)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "al_menos_uno_positivo = Or(positivos_mix)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "ninguno_cero = And(sweep(es_no_cero, valores_mix))"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "flag_mix = al_menos_uno_positivo"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "valor_flag = 1 if flag_mix else 0"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "max_abs_mix = max(sweep(abs, valores_mix))"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "descendente = arange(3, -3, -1)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "comparacion_desc = sweep(es_no_cero, descendente)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "## Verificación Final\n\nSi todas las evaluaciones funcionan correctamente, deberías ver:\n- Tabla **Functions** con las funciones definidas (f, area\\_{rectangulo}, g, h, cuadrado, doble, compuesta, momento\\_{inercia}, f\\_{lineal}, es_positivo, es_no_cero)\n- Tabla **Arrays** con todos los arrays (arr1 a arr10, arr\\_{un\\_elemento}, arr\\_{dos\\_elementos}, alturas, xs\\_{sweep}, ys\\_{sweep}, valores_mix, descendente)\n- Tabla **Variables** con los resultados y constantes"
+    }
+  ]
+}

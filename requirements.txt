@@ -5,7 +5,6 @@ pymupdf
 openai
 python-dotenv
 sympy
-pint
 markdown-it-py
 bleach
 PyYAML

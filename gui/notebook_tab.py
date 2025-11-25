@@ -5,9 +5,17 @@ import os
 import re
 
 from PySide6.QtCore import Qt, QSettings, QTimer
-from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtGui import (
+    QKeySequence,
+    QShortcut,
+    QSyntaxHighlighter,
+    QTextCharFormat,
+    QColor,
+    QFont,
+)
 from PySide6.QtWidgets import (
     QHBoxLayout,
+    QGridLayout,
     QComboBox,
     QFileDialog,
     QInputDialog,
@@ -27,7 +35,48 @@ from PySide6.QtWebEngineWidgets import QWebEngineView
 
 from notebook.document import Block, Document, FormulaBlock, NotebookOptions, TextBlock
 from notebook.renderer import NotebookRenderer
-from notebook.units import COMMON_UNITS, build_common_units
+
+
+class ParenthesisHighlighter(QSyntaxHighlighter):
+    """Colors matching parentheses based on nesting depth for formulas."""
+
+    def __init__(self, document):
+        super().__init__(document)
+        self.enabled = False
+        self.palette = [
+            QColor("#2a82da"),
+            QColor("#e67e22"),
+            QColor("#27ae60"),
+            QColor("#9b59b6"),
+            QColor("#d35400"),
+            QColor("#16a085"),
+            QColor("#c0392b"),
+            QColor("#8e44ad"),
+            QColor("#2980b9"),
+            QColor("#f1c40f"),
+        ]
+
+    def highlightBlock(self, text: str) -> None:  # noqa: N802
+        if not self.enabled:
+            return
+
+        depth = self.previousBlockState()
+        depth = 0 if depth < 0 else depth
+        fmt = QTextCharFormat()
+
+        for i, ch in enumerate(text):
+            if ch == "(":
+                color = self.palette[depth % len(self.palette)]
+                fmt.setForeground(color)
+                self.setFormat(i, 1, fmt)
+                depth += 1
+            elif ch == ")":
+                depth = max(depth - 1, 0)
+                color = self.palette[depth % len(self.palette)]
+                fmt.setForeground(color)
+                self.setFormat(i, 1, fmt)
+
+        self.setCurrentBlockState(depth)
 
 
 class NotebookTab(QWidget):
@@ -37,13 +86,9 @@ class NotebookTab(QWidget):
         super().__init__(parent)
         self.document = Document()
         self.renderer = NotebookRenderer()
+        self.paren_highlighter = None
 
         self.settings = getattr(parent, "settings", QSettings("MyCompany", "PDFtoMD"))
-        self.unit_presets = build_common_units(self._load_unit_presets())
-        COMMON_UNITS[:] = self.unit_presets
-        self.target_unit = self._load_target_unit()
-        self.simplify_units = self._load_simplify_units()
-        self._target_placeholder = "(auto)"
 
         # UI elements
         self.block_list = QListWidget()
@@ -52,6 +97,7 @@ class NotebookTab(QWidget):
         self.preview = QWebEngineView()
         self._delete_armed = False
         self.hint_label = QLabel()
+        self._last_selected_block_id = None
 
         self._setup_ui()
         self._connect_signals()
@@ -59,29 +105,40 @@ class NotebookTab(QWidget):
         self._seed_document()
 
     def _setup_ui(self) -> None:
-        """Create layout with controls, editor, and preview."""
+        """Create layout with controls, editor, preview, and toolbar."""
+
         splitter = QSplitter(Qt.Orientation.Horizontal)
 
-        # Left column: block list and buttons
+        # Left column: controls + lists + editor (controls on the left)
         left_panel = QWidget()
-        left_layout = QVBoxLayout(left_panel)
-        left_layout.setContentsMargins(4, 4, 4, 4)
+        left_outer = QHBoxLayout(left_panel)
+        left_outer.setContentsMargins(6, 6, 6, 6)
+        left_outer.setSpacing(6)
 
-        add_text_btn = QPushButton("Add Text Block")
+        # Controls column (grouped vertically)
+        controls_panel = QWidget()
+        controls_layout = QVBoxLayout(controls_panel)
+        controls_layout.setContentsMargins(0, 0, 0, 0)
+        controls_layout.setSpacing(4)
+
+        def _add_group(title: str, buttons: list[QPushButton]) -> None:
+            label = QLabel(title)
+            label.setStyleSheet("font-weight: bold; margin-top: 4px;")
+            controls_layout.addWidget(label)
+            for btn in buttons:
+                btn.setMinimumWidth(120)
+                controls_layout.addWidget(btn)
+
+        add_text_btn = QPushButton("Add\nText")
         add_text_btn.clicked.connect(self.add_text_block)
-        add_formula_btn = QPushButton("Add Formula Block")
+        add_formula_btn = QPushButton("Add\nFormula")
         add_formula_btn.clicked.connect(self.add_formula_block)
-        delete_btn = QPushButton("Delete Selected")
+        delete_btn = QPushButton("Delete\nSelected")
         delete_btn.clicked.connect(self.delete_selected_block)
 
-        export_html_btn = QPushButton("Export HTML")
-        export_html_btn.clicked.connect(self.export_html)
-        export_md_btn = QPushButton("Export Markdown")
-        export_md_btn.clicked.connect(self.export_markdown)
-
-        move_up_btn = QPushButton("Move Up")
+        move_up_btn = QPushButton("Move\nUp")
         move_up_btn.clicked.connect(lambda: self.move_selected_block(-1))
-        move_down_btn = QPushButton("Move Down")
+        move_down_btn = QPushButton("Move\nDown")
         move_down_btn.clicked.connect(lambda: self.move_selected_block(1))
 
         undo_btn = QPushButton("Undo")
@@ -89,51 +146,79 @@ class NotebookTab(QWidget):
         redo_btn = QPushButton("Redo")
         redo_btn.clicked.connect(self.redo_action)
 
-        save_btn = QPushButton("Save Notebook")
+        save_btn = QPushButton("Save\nNotebook")
         save_btn.clicked.connect(self.save_document)
-        load_btn = QPushButton("Load Notebook")
+        load_btn = QPushButton("Load\nNotebook")
         load_btn.clicked.connect(self.load_document)
+        export_html_btn = QPushButton("Export\nHTML")
+        export_html_btn.clicked.connect(self.export_html)
+        export_md_btn = QPushButton("Export\nMarkdown")
+        export_md_btn.clicked.connect(self.export_markdown)
 
-        left_layout.addWidget(add_text_btn)
-        left_layout.addWidget(add_formula_btn)
-        left_layout.addWidget(delete_btn)
-        left_layout.addWidget(export_html_btn)
-        left_layout.addWidget(export_md_btn)
-        left_layout.addWidget(move_up_btn)
-        left_layout.addWidget(move_down_btn)
-        left_layout.addWidget(undo_btn)
-        left_layout.addWidget(redo_btn)
-        left_layout.addWidget(save_btn)
-        left_layout.addWidget(load_btn)
+        _add_group("Blocks", [add_text_btn, add_formula_btn, delete_btn])
+        _add_group("Order", [move_up_btn, move_down_btn])
+        _add_group("Edit", [undo_btn, redo_btn])
+        _add_group("File", [save_btn, load_btn, export_html_btn, export_md_btn])
+        controls_layout.addStretch()
+
+        # Main content (lists + editor)
+        left_content = QWidget()
+        left_layout = QVBoxLayout(left_content)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.setSpacing(6)
+
+        block_list_label = QLabel("Blocks (id/type)")
+        left_layout.addWidget(block_list_label)
         left_layout.addWidget(self.block_list, 1)
-
-        # Right column: editor + preview stacked vertically
-        right_panel = QWidget()
-        right_layout = QVBoxLayout(right_panel)
-        right_layout.setContentsMargins(4, 4, 4, 4)
-
-        right_layout.addWidget(self._build_toolbar())
 
         stack_label = QLabel("Blocks (raw)")
         stack_label.setToolTip("Each block shown in order; use keyboard shortcuts A/B/T/F, DD, Shift+Enter.")
-        right_layout.addWidget(stack_label)
+        left_layout.addWidget(stack_label)
         self.block_stack.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
         self.block_stack.setAlternatingRowColors(True)
-        right_layout.addWidget(self.block_stack, 1)
+        left_layout.addWidget(self.block_stack, 1)
 
-        self.editor.setPlaceholderText("Enter text or a SymPy-friendly expression (use * for multiplication: 3*MPa, 2*d)...")
-        right_layout.addWidget(self.editor, 1)
+        self.editor.setPlaceholderText("Enter text or a SymPy-friendly expression (use * for multiplication: 3*a, 2*d)...")
+        font = QFont()
+        font.setPointSize(15)
+        font.setBold(True)
+        self.editor.setFont(font)
+        left_layout.addWidget(self.editor, 1)
+        self.paren_highlighter = ParenthesisHighlighter(self.editor.document())
         self.hint_label.setStyleSheet("color: #f7c6c5; font-size: 11px;")
-        right_layout.addWidget(self.hint_label)
-        right_layout.addWidget(self.preview, 2)
+        left_layout.addWidget(self.hint_label)
+
+        left_outer.addWidget(controls_panel)
+        left_outer.addWidget(left_content, 1)
+
+        # Center column: preview
+        center_panel = QWidget()
+        center_panel.setMinimumWidth(400)
+        center_layout = QVBoxLayout(center_panel)
+        center_layout.setContentsMargins(6, 6, 6, 6)
+        center_layout.setSpacing(6)
+        preview_label = QLabel("Preview")
+        preview_label.setStyleSheet("font-weight: bold;")
+        center_layout.addWidget(preview_label)
+        center_layout.addWidget(self.preview, 1)
+
+        # Right column: toolbar
+        right_panel = QWidget()
+        right_layout = QVBoxLayout(right_panel)
+        right_layout.setContentsMargins(6, 6, 6, 6)
+        right_layout.setSpacing(6)
+        right_layout.addWidget(self._build_toolbar())
+        right_layout.addStretch()
 
         splitter.addWidget(left_panel)
+        splitter.addWidget(center_panel)
         splitter.addWidget(right_panel)
+        splitter.setStretchFactor(0, 2)
         splitter.setStretchFactor(1, 2)
+        splitter.setStretchFactor(2, 1)
 
         main_layout = QHBoxLayout(self)
         main_layout.addWidget(splitter)
-
     def _connect_signals(self) -> None:
         self.block_list.currentItemChanged.connect(self.on_block_selected)
         self.block_stack.currentItemChanged.connect(self.on_stack_selected)
@@ -313,6 +398,8 @@ class NotebookTab(QWidget):
                 target_row = 0
             self._select_row(target_row)
             self._load_editor_from_row(target_row)
+            self._remember_selected_block(target_row)
+            self._scroll_preview_later()
         else:
             self.editor.blockSignals(True)
             self.editor.clear()
@@ -327,6 +414,14 @@ class NotebookTab(QWidget):
         self.block_stack.setCurrentRow(row)
         self.block_list.blockSignals(False)
         self.block_stack.blockSignals(False)
+
+    def _remember_selected_block(self, row: int) -> None:
+        """Store the block id for later scroll sync."""
+
+        if 0 <= row < len(self.document.blocks):
+            self._last_selected_block_id = self.document.blocks[row].block_id
+        else:
+            self._last_selected_block_id = None
 
     def _current_row(self) -> int:
         """Return the active row prioritizing the stacked view selection."""
@@ -346,6 +441,9 @@ class NotebookTab(QWidget):
         self.editor.blockSignals(True)
         self.editor.setPlainText(block.raw)
         self.editor.blockSignals(False)
+        if self.paren_highlighter:
+            self.paren_highlighter.enabled = isinstance(block, FormulaBlock)
+            self.paren_highlighter.rehighlight()
 
     def _update_stack_item(self, row: int) -> None:
         """Refresh the stacked/raw list label for a single row without rebuilding all items."""
@@ -373,7 +471,7 @@ class NotebookTab(QWidget):
         """Show a gentle reminder when implicit multiplication is detected."""
 
         pattern = re.compile(r"(\d)([A-Za-z])|(\d)\(|\)(\d)|\)([A-Za-z])|([A-Za-z])\(")
-        message = "Usa * para multiplicar: ej. 3*MPa, 2*d, a*(b)"
+        message = "Usa * para multiplicar: ej. 3*a, 2*d, a*(b)"
         if pattern.search(raw_text):
             self.hint_label.setText(message)
         else:
@@ -386,6 +484,8 @@ class NotebookTab(QWidget):
             return
         self._select_row(row)
         self._load_editor_from_row(row)
+        self._remember_selected_block(row)
+        self._scroll_preview_later()
 
     def on_stack_selected(self, current: QListWidgetItem, _previous: QListWidgetItem) -> None:
         row = self.block_stack.currentRow()
@@ -394,6 +494,8 @@ class NotebookTab(QWidget):
             return
         self._select_row(row)
         self._load_editor_from_row(row)
+        self._remember_selected_block(row)
+        self._scroll_preview_later()
 
     def on_editor_changed(self) -> None:
         row = self._current_row()
@@ -417,6 +519,24 @@ class NotebookTab(QWidget):
             options=self._evaluation_options(hide_logs=False),
         )
         self.preview.setHtml(html_content)
+        self._scroll_preview_later()
+
+    def _scroll_preview_later(self) -> None:
+        """Scroll to the last selected block after the preview is ready."""
+
+        if not self._last_selected_block_id:
+            return
+
+        def _scroll():
+            js = (
+                "(() => {"
+                f" const el = document.getElementById('block-{self._last_selected_block_id}');"
+                " if (el) { el.scrollIntoView({behavior: 'smooth', block: 'center'}); }"
+                "})();"
+            )
+            self.preview.page().runJavaScript(js)
+
+        QTimer.singleShot(150, _scroll)
 
     def export_html(self) -> None:
         """Persist the rendered notebook to an HTML file."""
@@ -468,87 +588,105 @@ class NotebookTab(QWidget):
 
     # Toolbar helpers
     def _build_toolbar(self) -> QWidget:
-        """Create a small toolbar with math operators and unit picker."""
+        """Create a vertical toolbar grouped by function type, 4 columns per group."""
 
         container = QWidget()
-        layout = QHBoxLayout(container)
-        layout.setContentsMargins(0, 0, 0, 4)
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(4)
+        container.setMinimumWidth(220)
 
-        ops = [
+        def _add_group(title: str, items: list[tuple[str, str]]) -> None:
+            lbl = QLabel(title)
+            lbl.setStyleSheet("font-weight: bold; margin-top: 4px;")
+            layout.addWidget(lbl)
+            grid_widget = QWidget()
+            grid = QGridLayout(grid_widget)
+            grid.setContentsMargins(0, 0, 0, 0)
+            grid.setHorizontalSpacing(4)
+            grid.setVerticalSpacing(2)
+            for idx, (label, snippet) in enumerate(items):
+                btn = QToolButton()
+                btn.setText(label)
+                btn.setToolTip(f"Insert {label}")
+                btn.clicked.connect(lambda _=False, s=snippet: self.insert_snippet(s))
+                btn.setMinimumWidth(52)
+                btn.setMinimumHeight(24)
+                row, col = divmod(idx, 3)
+                grid.addWidget(btn, row, col)
+            layout.addWidget(grid_widget)
+
+        _add_group("Operadores", [
             ("+", " + "),
             ("-", " - "),
-            ("\u00d7", " * "),
-            ("\u00f7", " / "),
+            ("*", " * "),
+            ("/", " / "),
             ("^", " ** "),
-            ("\u221a", "sqrt()"),
-            ("\u00b7", " \u22c5 "),  # middle dot for multiplication
-            ("\u2248", " \u2248 "),
-        ]
-        for label, snippet in ops:
-            btn = QToolButton()
-            btn.setText(label)
-            btn.setToolTip(f"Insert {label}")
-            btn.clicked.connect(lambda _=False, s=snippet: self.insert_snippet(s))
-            layout.addWidget(btn)
+            ("sqrt", "sqrt()"),
+            ("?", " \u22c5 "),
+            ("?", " \u2248 "),
+        ])
 
-        # Quick LaTeX snippets for text/fmla blocks
-        latex_snippets = [
-            ("Inline $", "$·$"),
-            ("Frac", "\\frac{·}{·}"),
-            ("Sqrt", "\\sqrt{·}"),
-            ("Sub", "x_{·}"),
-            ("Sup", "x^{·}"),
-        ]
-        for label, snippet in latex_snippets:
-            btn = QToolButton()
-            btn.setText(label)
-            btn.setToolTip(f"Insert {snippet}")
-            btn.clicked.connect(lambda _=False, s=snippet: self.insert_snippet(s))
-            layout.addWidget(btn)
+        _add_group("Funciones", [
+            ("sin", "sin()"),
+            ("cos", "cos()"),
+            ("tan", "tan()"),
+            ("exp", "exp()"),
+            ("log", "log()"),
+            ("pi", "pi"),
+            ("abs", "abs()"),
+        ])
 
-        # Greek symbols quick pick
+        _add_group("Agregados", [
+            ("sum", "sum()"),
+            ("min", "min()"),
+            ("max", "max()"),
+            ("range", "range()"),
+        ])
+
+        _add_group("Arrays", [
+            ("linspace", "linspace( , , )"),
+            ("arange", "arange( , , )"),
+            ("sweep", "sweep(f, xs)"),
+        ])
+
+        _add_group("Condicionales", [
+            ("if/else", "(a) if (condicion) else (b)"),
+            ("if/elif/else", "(a) if (cond1) else ((b) if (cond2) else (c))"),
+        ])
+
+        _add_group("Lógico", [
+            ("A and B", "(A) and (B)"),
+            ("A or B", "(A) or (B)"),
+            ("not A", "not (A)"),
+        ])
+
+        _add_group("Definir f(x)", [
+            ("f(x)", "f(x) = "),
+        ])
+
+        _add_group("LaTeX", [
+            ("Inline $", r"$ $"),
+            ("Frac", r"\frac{}{}"),
+            ("Sqrt", r"\sqrt{}"),
+            ("Sub", r"x_{}"),
+            ("Sup", r"x^{}"),
+        ])
+
+        greek_label = QLabel("Greek")
+        greek_label.setStyleSheet("font-weight: bold; margin-top: 4px;")
+        layout.addWidget(greek_label)
         self.greek_combo = QComboBox()
-        greek_items = ["\\alpha", "\\beta", "\\gamma", "\\delta", "\\phi", "\\theta", "\\lambda", "\\pi", "\\sigma", "\\omega"]
+        greek_items = [r"\alpha", r"\beta", r"\gamma", r"\delta", r"\phi", r"\theta", r"\lambda", r"\pi", r"\sigma", r"\omega"]
         self.greek_combo.addItems(greek_items)
         self.greek_combo.setToolTip("Insert Greek symbol (LaTeX)")
-
         greek_btn = QToolButton()
-        greek_btn.setText("Greek")
+        greek_btn.setText("Insert")
         greek_btn.setToolTip("Insert selected Greek symbol")
         greek_btn.clicked.connect(lambda: self.insert_snippet(self.greek_combo.currentText()))
-
         layout.addWidget(self.greek_combo)
         layout.addWidget(greek_btn)
 
-        self.unit_combo = QComboBox()
-        self.unit_combo.setEditable(True)
-
-        edit_units_btn = QToolButton()
-        edit_units_btn.setText("Edit Units")
-        edit_units_btn.setToolTip("Customize the quick-pick unit list")
-        edit_units_btn.clicked.connect(self._edit_unit_presets)
-
-        self.target_unit_combo = QComboBox()
-        self.target_unit_combo.setEditable(True)
-        self.target_unit_combo.setToolTip("Convert results to this unit when possible")
-        self.target_unit_combo.currentTextChanged.connect(self._persist_target_unit)
-
-        self.simplify_checkbox = QCheckBox("Simplify units")
-        self.simplify_checkbox.setChecked(self.simplify_units)
-        self.simplify_checkbox.toggled.connect(self._persist_simplify_units)
-
-        self._apply_unit_presets(self.unit_presets, initialize=True)
-
-        unit_btn = QToolButton()
-        unit_btn.setText("Unit")
-        unit_btn.setToolTip("Insert selected unit")
-        unit_btn.clicked.connect(self.insert_selected_unit)
-
-        layout.addWidget(self.unit_combo)
-        layout.addWidget(unit_btn)
-        layout.addWidget(edit_units_btn)
-        layout.addWidget(self.target_unit_combo)
-        layout.addWidget(self.simplify_checkbox)
         layout.addStretch()
         return container
 
@@ -558,89 +696,6 @@ class NotebookTab(QWidget):
         cursor = self.editor.textCursor()
         cursor.insertText(text)
         self.editor.setTextCursor(cursor)
-
-    def insert_selected_unit(self) -> None:
-        """Insert the unit chosen from the combo."""
-
-        unit = self.unit_combo.currentText()
-        self.insert_snippet(f" {unit}")
-
-    # Unit presets and preferences
-    def _load_unit_presets(self) -> list[str]:
-        raw_value = self.settings.value("notebook/unit_presets", [])
-        if isinstance(raw_value, list):
-            return [str(item) for item in raw_value if str(item).strip()]
-        if isinstance(raw_value, str):
-            return [piece.strip() for piece in raw_value.split("\n") if piece.strip()]
-        return []
-
-    def _load_target_unit(self) -> str:
-        return str(self.settings.value("notebook/target_unit", "") or "")
-
-    def _load_simplify_units(self) -> bool:
-        stored = self.settings.value("notebook/simplify_units", True)
-        if isinstance(stored, bool):
-            return stored
-        if isinstance(stored, str):
-            return stored.lower() in {"1", "true", "yes"}
-        return True
-
-    def _apply_unit_presets(self, presets: list[str], initialize: bool = False) -> None:
-        self.unit_presets = build_common_units(presets)
-        COMMON_UNITS[:] = self.unit_presets
-        if not initialize:
-            self.settings.setValue("notebook/unit_presets", self.unit_presets)
-
-        self.unit_combo.blockSignals(True)
-        self.unit_combo.clear()
-        self.unit_combo.addItems(self.unit_presets)
-        self.unit_combo.blockSignals(False)
-
-        current_target = self.target_unit if initialize else self._current_target_unit()
-        self.target_unit_combo.blockSignals(True)
-        self.target_unit_combo.clear()
-        self.target_unit_combo.addItem(self._target_placeholder)
-        self.target_unit_combo.addItems(self.unit_presets)
-        if current_target:
-            if self.target_unit_combo.findText(current_target) == -1:
-                self.target_unit_combo.addItem(current_target)
-            self.target_unit_combo.setCurrentText(current_target)
-        else:
-            self.target_unit_combo.setCurrentIndex(0)
-        self.target_unit_combo.blockSignals(False)
-
-    def _edit_unit_presets(self) -> None:
-        current_text = "\n".join(self.unit_presets)
-        text, ok = QInputDialog.getMultiLineText(
-            self,
-            "Edit unit presets",
-            "Units (one per line):",
-            current_text,
-        )
-        if not ok:
-            return
-        new_presets = build_common_units(text.splitlines())
-        self._apply_unit_presets(new_presets)
-        self.update_preview()
-
-    def _persist_target_unit(self, text: str) -> None:
-        normalized = text.strip()
-        if normalized == self._target_placeholder:
-            normalized = ""
-        self.target_unit = normalized
-        self.settings.setValue("notebook/target_unit", normalized)
-        self.update_preview()
-
-    def _current_target_unit(self) -> str | None:
-        normalized = self.target_unit_combo.currentText().strip()
-        if not normalized or normalized == self._target_placeholder:
-            return None
-        return normalized
-
-    def _persist_simplify_units(self, checked: bool) -> None:
-        self.simplify_units = checked
-        self.settings.setValue("notebook/simplify_units", checked)
-        self.update_preview()
 
     def _hide_logs_pref(self) -> bool:
         stored = self.settings.value("render/hide_logs", False)
@@ -663,7 +718,5 @@ class NotebookTab(QWidget):
 
     def _evaluation_options(self, hide_logs: bool = False) -> NotebookOptions:
         return NotebookOptions(
-            target_unit=self._current_target_unit(),
-            simplify_units=self.simplify_checkbox.isChecked(),
             hide_logs=hide_logs,
         )

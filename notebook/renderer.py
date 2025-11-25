@@ -5,7 +5,7 @@ import html
 from dataclasses import dataclass
 from typing import Iterable
 
-from notebook.document import Document, FormulaBlock, TextBlock, VariableRecord
+from notebook.document import Document, FormulaBlock, TextBlock, VariableRecord, FunctionRecord, ArrayRecord
 
 
 @dataclass
@@ -45,10 +45,16 @@ class NotebookRenderer:
         if not body:
             body = "<p class='text-block'>No blocks yet.</p>"
 
+        function_table = self._render_function_table(context.functions)
+        array_table = self._render_array_table(context.arrays)
         variable_table = self._render_variable_table(context.variables)
         error_panel = self._render_error_panel(context.errors)
         hide_logs = bool(getattr(options, "hide_logs", False)) if options is not None else False
         log_panel = "" if hide_logs else self._render_log_panel(context.logs)
+        if function_table:
+            body = f"{body}\n{function_table}"
+        if array_table:
+            body = f"{body}\n{array_table}"
         if variable_table:
             body = f"{body}\n{variable_table}"
         if error_panel:
@@ -113,13 +119,11 @@ class NotebookRenderer:
         rows = []
         for entry in logs:
             substitutions = ", ".join(entry.get("substitutions", [])) or "-"
-            units = html.escape(entry.get("units") or "")
             rows.append(
                 "<tr>"
                 f"<td>{html.escape(entry.get('block_id', '')[:6])}</td>"
                 f"<td>{html.escape(entry.get('expression', ''))}</td>"
                 f"<td>{entry.get('duration_ms', 0):.2f} ms</td>"
-                f"<td>{units}</td>"
                 f"<td>{html.escape(substitutions)}</td>"
                 "</tr>"
             )
@@ -129,7 +133,74 @@ class NotebookRenderer:
             "<h3>Registro de evaluación</h3>"
             "<table>"
             "<thead>"
-            "<tr><th>Bloque</th><th>Expresión</th><th>Tiempo</th><th>Unidades</th><th>Sustituciones</th></tr>"
+            "<tr><th>Bloque</th><th>Expresión</th><th>Tiempo</th><th>Sustituciones</th></tr>"
+            "</thead>"
+            "<tbody>"
+            + "".join(rows)
+            + "</tbody>"
+            "</table>"
+            "</div>"
+        )
+
+    def _render_array_table(self, arrays: dict[str, ArrayRecord]) -> str:
+        """Render arrays captured during evaluation."""
+
+        if not arrays:
+            return ""
+
+        rows = []
+        for arr in arrays.values():
+            values = arr.values
+            if len(values) <= 8:
+                value_str = ", ".join(f"{v:.2f}" for v in values)
+            else:
+                head = ", ".join(f"{v:.2f}" for v in values[:5])
+                tail = ", ".join(f"{v:.2f}" for v in values[-2:])
+                value_str = f"{head}, ..., {tail}"
+            rows.append(
+                "<tr>"
+                f"<td>{html.escape(arr.name)}</td>"
+                f"<td>$$ {arr.expression} $$</td>"
+                f"<td>{html.escape(value_str)}</td>"
+                "</tr>"
+            )
+
+        return (
+            "<div class='variable-table'>"
+            "<h3>Arrays</h3>"
+            "<table>"
+            "<thead>"
+            "<tr><th>Name</th><th>Expression</th><th>Values</th></tr>"
+            "</thead>"
+            "<tbody>"
+            + "".join(rows)
+            + "</tbody>"
+            "</table>"
+            "</div>"
+        )
+
+    def _render_function_table(self, functions: dict[str, FunctionRecord]) -> str:
+        """Render user-defined functions."""
+
+        if not functions:
+            return ""
+
+        rows = []
+        for func_record in functions.values():
+            params_str = ", ".join(func_record.parameters)
+            rows.append(
+                "<tr>"
+                f"<td>{html.escape(func_record.name)}({html.escape(params_str)})</td>"
+                f"<td>$$ {func_record.expression} $$</td>"
+                "</tr>"
+            )
+
+        return (
+            "<div class='function-table'>"
+            "<h3>Functions</h3>"
+            "<table>"
+            "<thead>"
+            "<tr><th>Signature</th><th>Expression</th></tr>"
             "</thead>"
             "<tbody>"
             + "".join(rows)
@@ -149,7 +220,6 @@ class NotebookRenderer:
                 f"<td>{html.escape(variable.name)}</td>"
                 f"<td>$$ {variable.expression} $$</td>"
                 f"<td>{html.escape(value)}</td>"
-                f"<td>{html.escape(variable.units or '')}</td>"
                 "</tr>"
             )
         if not rows:
@@ -160,7 +230,7 @@ class NotebookRenderer:
             "<h3>Variables</h3>"
             "<table>"
             "<thead>"
-            "<tr><th>Name</th><th>Expression</th><th>Value</th><th>Units</th></tr>"
+            "<tr><th>Name</th><th>Expression</th><th>Value</th></tr>"
             "</thead>"
             "<tbody>"
             + "".join(rows)
@@ -171,7 +241,7 @@ class NotebookRenderer:
 
     @staticmethod
     def _format_value(numeric_value) -> str:
-        """Format numeric values and leave unit display to the dedicated column."""
+        """Format numeric values consistently."""
 
         if numeric_value is None:
             return ""
@@ -228,11 +298,11 @@ class NotebookRenderer:
             .formula-input {{ font-size: 18px; margin-bottom: 6px; }}
             .formula-result {{ color: {self.theme.accent}; font-weight: bold; }}
             .formula-block.error .formula-result {{ color: #d9534f; }}
-            .variable-table {{ margin-top: 24px; background: {self.theme.panel}; padding: 12px; border-radius: 6px; border: 1px solid {self.theme.border}; }}
-            .variable-table h3 {{ margin-top: 0; }}
-            .variable-table table {{ width: 100%; border-collapse: collapse; }}
-            .variable-table th, .variable-table td {{ padding: 6px 8px; text-align: left; border-bottom: 1px solid {self.theme.border}; }}
-            .variable-table th {{ color: {self.theme.text}; opacity: 0.8; }}
+            .function-table, .variable-table {{ margin-top: 24px; background: {self.theme.panel}; padding: 12px; border-radius: 6px; border: 1px solid {self.theme.border}; }}
+            .function-table h3, .variable-table h3 {{ margin-top: 0; }}
+            .function-table table, .variable-table table {{ width: 100%; border-collapse: collapse; }}
+            .function-table th, .function-table td, .variable-table th, .variable-table td {{ padding: 6px 8px; text-align: left; border-bottom: 1px solid {self.theme.border}; }}
+            .function-table th, .variable-table th {{ color: {self.theme.text}; opacity: 0.8; }}
             .error-panel, .log-panel {{ margin-top: 16px; background: {self.theme.panel}; padding: 12px; border-radius: 6px; border: 1px solid {self.theme.border}; }}
             .error-panel h3 {{ margin-top: 0; color: #d9534f; }}
             .log-panel h3 {{ margin-top: 0; color: {self.theme.accent}; }}
