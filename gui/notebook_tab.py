@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
     QInputDialog,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QMessageBox,
@@ -30,6 +31,10 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
     QCheckBox,
+    QTableWidget,
+    QTableWidgetItem,
+    QHeaderView,
+    QAbstractItemView,
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
 
@@ -92,12 +97,14 @@ class NotebookTab(QWidget):
 
         # UI elements
         self.block_list = QListWidget()
-        self.block_stack = QListWidget()
         self.editor = QTextEdit()
+        self.variable_search = QLineEdit()
+        self.snippet_table = QTableWidget()
         self.preview = QWebEngineView()
         self._delete_armed = False
         self.hint_label = QLabel()
         self._last_selected_block_id = None
+        self._last_context = None
 
         self._setup_ui()
         self._connect_signals()
@@ -167,16 +174,11 @@ class NotebookTab(QWidget):
         left_layout.setContentsMargins(0, 0, 0, 0)
         left_layout.setSpacing(6)
 
-        block_list_label = QLabel("Blocks (id/type)")
+        block_list_label = QLabel("Blocks (type / id / summary)")
         left_layout.addWidget(block_list_label)
+        self.block_list.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
+        self.block_list.setAlternatingRowColors(True)
         left_layout.addWidget(self.block_list, 1)
-
-        stack_label = QLabel("Blocks (raw)")
-        stack_label.setToolTip("Each block shown in order; use keyboard shortcuts A/B/T/F, DD, Shift+Enter.")
-        left_layout.addWidget(stack_label)
-        self.block_stack.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
-        self.block_stack.setAlternatingRowColors(True)
-        left_layout.addWidget(self.block_stack, 1)
 
         self.editor.setPlaceholderText("Enter text or a SymPy-friendly expression (use * for multiplication: 3*a, 2*d)...")
         font = QFont()
@@ -187,6 +189,43 @@ class NotebookTab(QWidget):
         self.paren_highlighter = ParenthesisHighlighter(self.editor.document())
         self.hint_label.setStyleSheet("color: #f7c6c5; font-size: 11px;")
         left_layout.addWidget(self.hint_label)
+
+        # Snippets panel for variables/arrays/functions
+        snippets_box = QWidget()
+        snippets_layout = QVBoxLayout(snippets_box)
+        snippets_layout.setContentsMargins(0, 0, 0, 0)
+        snippets_layout.setSpacing(4)
+
+        search_row = QHBoxLayout()
+        search_label = QLabel("Filtro")
+        search_label.setStyleSheet("font-weight: bold;")
+        search_row.addWidget(search_label)
+        self.variable_search.setPlaceholderText("Filtrar por nombre...")
+        search_row.addWidget(self.variable_search, 1)
+        snippets_layout.addLayout(search_row)
+
+        table_label = QLabel("Variables / Arrays / Funciones")
+        table_label.setStyleSheet("font-weight: bold; margin-top: 4px;")
+        snippets_layout.addWidget(table_label)
+
+        self.snippet_table.setColumnCount(3)
+        self.snippet_table.setHorizontalHeaderLabels(["Variable", "Array", "Función"])
+        header = self.snippet_table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        header.setMinimumSectionSize(120)
+        self.snippet_table.setTextElideMode(Qt.TextElideMode.ElideNone)
+        self.snippet_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.snippet_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectItems)
+        self.snippet_table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
+        self.snippet_table.setAlternatingRowColors(True)
+        self.snippet_table.setMinimumHeight(200)
+        self.snippet_table.setWordWrap(True)
+        self.snippet_table.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
+        self.snippet_table.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
+        snippets_layout.addWidget(self.snippet_table)
+
+        snippets_box.setMinimumHeight(220)
+        left_layout.addWidget(snippets_box)
 
         left_outer.addWidget(controls_panel)
         left_outer.addWidget(left_content, 1)
@@ -221,20 +260,21 @@ class NotebookTab(QWidget):
         main_layout.addWidget(splitter)
     def _connect_signals(self) -> None:
         self.block_list.currentItemChanged.connect(self.on_block_selected)
-        self.block_stack.currentItemChanged.connect(self.on_stack_selected)
         self.editor.textChanged.connect(self.on_editor_changed)
+        self.variable_search.textChanged.connect(self._apply_snippet_filter)
+        self.snippet_table.itemActivated.connect(self._insert_from_table)
 
     def _setup_shortcuts(self) -> None:
         QShortcut(QKeySequence("Ctrl+Up"), self, activated=lambda: self.move_selected_block(-1))
         QShortcut(QKeySequence("Ctrl+Down"), self, activated=lambda: self.move_selected_block(1))
         QShortcut(QKeySequence.StandardKey.Undo, self, activated=self.undo_action)
         QShortcut(QKeySequence.StandardKey.Redo, self, activated=self.redo_action)
-        QShortcut(QKeySequence("A"), self.block_stack, activated=lambda: self._insert_block_keyboard(above=True))
-        QShortcut(QKeySequence("B"), self.block_stack, activated=lambda: self._insert_block_keyboard(above=False))
-        QShortcut(QKeySequence("T"), self.block_stack, activated=lambda: self._insert_block_keyboard(above=False, force_type="text"))
-        QShortcut(QKeySequence("F"), self.block_stack, activated=lambda: self._insert_block_keyboard(above=False, force_type="formula"))
+        QShortcut(QKeySequence("A"), self.block_list, activated=lambda: self._insert_block_keyboard(above=True))
+        QShortcut(QKeySequence("B"), self.block_list, activated=lambda: self._insert_block_keyboard(above=False))
+        QShortcut(QKeySequence("T"), self.block_list, activated=lambda: self._insert_block_keyboard(above=False, force_type="text"))
+        QShortcut(QKeySequence("F"), self.block_list, activated=lambda: self._insert_block_keyboard(above=False, force_type="formula"))
         QShortcut(QKeySequence("Shift+Return"), self.editor, activated=self._evaluate_and_advance)
-        QShortcut(QKeySequence("D"), self.block_stack, activated=self._handle_delete_shortcut)
+        QShortcut(QKeySequence("D"), self.block_list, activated=self._handle_delete_shortcut)
 
     def _seed_document(self) -> None:
         """Add a starter text and formula block so the preview is not empty."""
@@ -304,7 +344,7 @@ class NotebookTab(QWidget):
             self.document.add_block(block)
             self._refresh_block_views(select_last=True)
             self.update_preview()
-            self._focus_stack()
+            self._focus_list()
             return
 
         current_row = self._current_row()
@@ -320,7 +360,7 @@ class NotebookTab(QWidget):
         if self.document.insert_block(insert_at, block):
             self._refresh_block_views(select_row=insert_at)
             self.update_preview()
-            self._focus_stack()
+            self._focus_list()
 
     def _evaluate_and_advance(self) -> None:
         """Evaluate current block and move to the next one (creating if needed)."""
@@ -335,7 +375,7 @@ class NotebookTab(QWidget):
         else:
             self._select_row(next_row)
             self._load_editor_from_row(next_row)
-        self._focus_stack()
+        self._focus_list()
 
     def _handle_delete_shortcut(self) -> None:
         """Double-tap D to delete the active block without using the mouse."""
@@ -375,19 +415,15 @@ class NotebookTab(QWidget):
     # UI updates
     def _refresh_block_views(self, select_last: bool = False, select_row: int | None = None) -> None:
         self.block_list.clear()
-        self.block_stack.clear()
         for idx, block in enumerate(self.document.blocks):
             title = "Text" if isinstance(block, TextBlock) else "Formula"
-            item = QListWidgetItem(f"{idx + 1}. {title} [{block.block_id[:6]}]")
-            self.block_list.addItem(item)
-
             summary = block.raw.strip().splitlines()[0] if block.raw.strip() else "(empty)"
             if len(summary) > 60:
                 summary = summary[:57] + "..."
-            stack_label = f"{idx + 1}. {title}: {summary}"
-            stack_item = QListWidgetItem(stack_label)
-            stack_item.setToolTip(block.raw.strip() or title)
-            self.block_stack.addItem(stack_item)
+            label = f"{idx + 1}. {title} [{block.block_id[:6]}] — {summary}"
+            item = QListWidgetItem(label)
+            item.setToolTip(block.raw.strip() or title)
+            self.block_list.addItem(item)
 
         if self.document.blocks:
             if select_last:
@@ -409,11 +445,8 @@ class NotebookTab(QWidget):
         """Sync selection across both block lists without feedback loops."""
 
         self.block_list.blockSignals(True)
-        self.block_stack.blockSignals(True)
         self.block_list.setCurrentRow(row)
-        self.block_stack.setCurrentRow(row)
         self.block_list.blockSignals(False)
-        self.block_stack.blockSignals(False)
 
     def _remember_selected_block(self, row: int) -> None:
         """Store the block id for later scroll sync."""
@@ -424,11 +457,8 @@ class NotebookTab(QWidget):
             self._last_selected_block_id = None
 
     def _current_row(self) -> int:
-        """Return the active row prioritizing the stacked view selection."""
+        """Return the active row from the unified list."""
 
-        row = self.block_stack.currentRow()
-        if row >= 0:
-            return row
         return self.block_list.currentRow()
 
     def _load_editor_from_row(self, row: int) -> None:
@@ -445,8 +475,8 @@ class NotebookTab(QWidget):
             self.paren_highlighter.enabled = isinstance(block, FormulaBlock)
             self.paren_highlighter.rehighlight()
 
-    def _update_stack_item(self, row: int) -> None:
-        """Refresh the stacked/raw list label for a single row without rebuilding all items."""
+    def _update_list_item(self, row: int) -> None:
+        """Refresh the block list label for a single row without rebuilding all items."""
 
         if row < 0 or row >= len(self.document.blocks):
             return
@@ -455,17 +485,14 @@ class NotebookTab(QWidget):
         summary = block.raw.strip().splitlines()[0] if block.raw.strip() else "(empty)"
         if len(summary) > 60:
             summary = summary[:57] + "..."
-        stack_label = f"{row + 1}. {title}: {summary}"
-        stack_item = self.block_stack.item(row)
-        if stack_item:
-            stack_item.setText(stack_label)
-            stack_item.setToolTip(block.raw.strip() or title)
-        list_item = self.block_list.item(row)
-        if list_item:
-            list_item.setText(f"{row + 1}. {title} [{block.block_id[:6]}]")
+        label = f"{row + 1}. {title} [{block.block_id[:6]}] — {summary}"
+        item = self.block_list.item(row)
+        if item:
+            item.setText(label)
+            item.setToolTip(block.raw.strip() or title)
 
-    def _focus_stack(self) -> None:
-        self.block_stack.setFocus(Qt.FocusReason.OtherFocusReason)
+    def _focus_list(self) -> None:
+        self.block_list.setFocus(Qt.FocusReason.OtherFocusReason)
 
     def _update_hint(self, raw_text: str) -> None:
         """Show a gentle reminder when implicit multiplication is detected."""
@@ -487,16 +514,6 @@ class NotebookTab(QWidget):
         self._remember_selected_block(row)
         self._scroll_preview_later()
 
-    def on_stack_selected(self, current: QListWidgetItem, _previous: QListWidgetItem) -> None:
-        row = self.block_stack.currentRow()
-        if row < 0:
-            self._load_editor_from_row(-1)
-            return
-        self._select_row(row)
-        self._load_editor_from_row(row)
-        self._remember_selected_block(row)
-        self._scroll_preview_later()
-
     def on_editor_changed(self) -> None:
         row = self._current_row()
         if row < 0 or row >= len(self.document.blocks):
@@ -505,13 +522,16 @@ class NotebookTab(QWidget):
         block.raw = self.editor.toPlainText()
         if isinstance(block, FormulaBlock):
             block.evaluate()
-        self._update_stack_item(row)
+        self._update_list_item(row)
         self.update_preview()
         self._update_hint(block.raw)
 
     def update_preview(self) -> None:
         """Render the document into the web view with MathJax."""
         mathjax_path, mathjax_url = self._mathjax_args(for_export=False)
+        context = self.document.evaluate(options=self._evaluation_options(hide_logs=False))
+        self._last_context = context
+        self._refresh_snippet_panel(context)
         html_content = self.document.to_html(
             renderer=self.renderer,
             mathjax_path=mathjax_path,
@@ -696,6 +716,80 @@ class NotebookTab(QWidget):
         cursor = self.editor.textCursor()
         cursor.insertText(text)
         self.editor.setTextCursor(cursor)
+
+    # Snippet panel helpers
+    def _refresh_snippet_panel(self, context) -> None:
+        """Update variables/arrays/functions lists from the latest evaluation context."""
+
+        if context is None:
+            self.snippet_table.setRowCount(0)
+            return
+        filter_text = self.variable_search.text().strip().lower()
+
+        def _matches(name: str) -> bool:
+            return filter_text in name.lower() if filter_text else True
+
+        # Build rows with max length among the three categories
+        array_names = set(context.arrays.keys())
+        variables = [v for v in context.variables if v.name not in array_names and _matches(v.name)]
+        arrays = [a for a in context.arrays.values() if _matches(a.name)]
+        functions = [f for f in context.functions.values() if _matches(f.name)]
+        max_len = max(len(variables), len(arrays), len(functions))
+        self.snippet_table.setRowCount(max_len)
+
+        def _make_item(text: str, tooltip: str, payload: str) -> QTableWidgetItem:
+            item = QTableWidgetItem(text)
+            item.setToolTip(tooltip)
+            item.setData(Qt.ItemDataRole.UserRole, payload)
+            return item
+
+        for row in range(max_len):
+            if row < len(variables):
+                v = variables[row]
+                if v.numeric_value is not None:
+                    value = str(v.numeric_value)
+                    text = f"{v.name}\n{value}"
+                else:
+                    text = f"{v.name}\n{v.expression}"
+                self.snippet_table.setItem(row, 0, _make_item(text, f"{v.name} = {v.expression}", v.name))
+            else:
+                self.snippet_table.setItem(row, 0, QTableWidgetItem(""))
+
+            if row < len(arrays):
+                a = arrays[row]
+                display = a.values
+                if len(display) > 6:
+                    preview = ", ".join(f"{v:.2f}" for v in display[:3]) + ", ..."
+                else:
+                    preview = ", ".join(f"{v:.2f}" for v in display)
+                text = f"{a.name}\n[{preview}]"
+                self.snippet_table.setItem(row, 1, _make_item(text, f"{a.name} = {a.expression}", a.name))
+            else:
+                self.snippet_table.setItem(row, 1, QTableWidgetItem(""))
+
+            if row < len(functions):
+                f = functions[row]
+                signature = f"{f.name}({', '.join(f.parameters)})"
+                text = f"{signature}"
+                self.snippet_table.setItem(row, 2, _make_item(text, f"{signature} = {f.expression}", f.name))
+            else:
+                self.snippet_table.setItem(row, 2, QTableWidgetItem(""))
+
+        self.snippet_table.resizeRowsToContents()
+
+    def _apply_snippet_filter(self) -> None:
+        """Filter the snippet lists without re-evaluating."""
+
+        self._refresh_snippet_panel(self._last_context)
+
+    def _insert_from_table(self, item) -> None:
+        """Insert the identifier stored in the activated table cell."""
+
+        if not item:
+            return
+        payload = item.data(Qt.ItemDataRole.UserRole)
+        if payload:
+            self.insert_snippet(payload)
 
     def _hide_logs_pref(self) -> bool:
         stored = self.settings.value("render/hide_logs", False)

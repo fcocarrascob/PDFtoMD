@@ -593,6 +593,15 @@ class FormulaBlock(Block):
         latex_expr = latex_expr.strip()
         return latex_expr
 
+    def _lhs_latex(self, name: str) -> str:
+        """Render a left-hand-side name with safe LaTeX (handles underscores as subscripts)."""
+
+        try:
+            symbol = sp.Symbol(name)
+            return self._cleanup_latex(sp.latex(symbol, order="none", mul_symbol=" \\cdot "))
+        except Exception:
+            return html.escape(name)
+
     def _ensure_sympy_expr(self, expression: str, context: EvaluationContext) -> None:
         """Guarantee a sympy_expr for rendering."""
 
@@ -646,8 +655,9 @@ class FormulaBlock(Block):
         self.evaluation_status = "error"
         self.error_type = type(exc).__name__
         self.error_message = str(exc)
+        lhs_latex = self._lhs_latex(lhs) if lhs else None
         if lhs:
-            self.latex = f"{html.escape(lhs)} = {expr_latex}"
+            self.latex = f"{lhs_latex} = {expr_latex}"
             context.register_variable(lhs, expr_latex, None)
         else:
             self.latex = expr_latex
@@ -716,10 +726,16 @@ class FormulaBlock(Block):
 
                             func_expr = self._safe_sympify(rhs, temp_context)
                             self.sympy_expr = func_expr
+                            func_expr_for_lambda = func_expr.subs(context.numeric_values)
 
                             # Create sympy lambda function
-                            # Use math module instead of numpy to avoid dependency issues
-                            sympy_lambda = sp.lambdify(param_symbols, func_expr, modules='math')
+                            # Use math module instead of numpy, and capture current numeric values + prior user lambdas
+                            lambda_env = math_env()
+                            lambda_env.update(context.numeric_values)
+                            for existing in context.functions.values():
+                                if existing.sympy_lambda:
+                                    lambda_env[existing.name] = existing.sympy_lambda
+                            sympy_lambda = sp.lambdify(param_symbols, func_expr_for_lambda, modules=[lambda_env, "math"])
 
                             # Register function
                             context.register_function(func_name, params, rhs, sympy_lambda)
@@ -729,9 +745,11 @@ class FormulaBlock(Block):
                             self.result = f"Function {func_name}({params_str}) defined"
 
                             # Generate LaTeX
+                            func_name_latex = self._lhs_latex(func_name)
+                            params_latex = ", ".join(self._lhs_latex(param) for param in params)
                             func_expr_latex = sp.latex(func_expr, order="none", mul_symbol=" \\cdot ")
                             func_expr_latex = self._cleanup_latex(func_expr_latex)
-                            self.latex = f"{html.escape(func_name)}({html.escape(params_str)}) = {func_expr_latex}"
+                            self.latex = f"{func_name_latex}({params_latex}) = {func_expr_latex}"
 
                             return
                         except Exception as exc:
@@ -739,7 +757,7 @@ class FormulaBlock(Block):
                             self.evaluation_status = "error"
                             self.error_type = type(exc).__name__
                             self.error_message = str(exc)
-                            self.latex = f"{html.escape(lhs)} = {html.escape(rhs)}"
+                            self.latex = f"{self._lhs_latex(lhs)} = {html.escape(rhs)}"
                             context.register_error(
                                 block_id=self.block_id,
                                 message=self.error_message,
@@ -801,7 +819,7 @@ class FormulaBlock(Block):
                         else html.escape(rhs)
                     )
                     expr_latex = self._cleanup_latex(expr_latex)
-                    self.latex = f"{html.escape(lhs)} = {expr_latex}"
+                    self.latex = f"{self._lhs_latex(lhs)} = {expr_latex}"
                     context.register_variable(lhs, expr_latex, self.numeric_value)
                     return
 
