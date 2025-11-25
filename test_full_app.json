@@ -274,6 +274,22 @@
     },
     {
       "type": "TextBlock",
+      "raw": "### 3.7 Condicionales multilínea y operadores lógicos"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "resultado_cond_multilinea = if x_cond > 5:\n    20\nelif x_cond == -3:\n    -30\nelse:\n    -1"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "alerta_negativos = And(x_cond < 0, Not(x_cond == -3))"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "acceso_otorgado = Or((x_cond > 0), And(x_cond == -3, Not(x_cond < -10)))"
+    },
+    {
+      "type": "TextBlock",
       "raw": "## Verificaci?n Final\n\nSi todas las evaluaciones funcionan correctamente, deber?as ver:\n- Tabla **Functions** con las funciones definidas (f, area\\_{rectangulo}, g, h, cuadrado, doble, compuesta, momento\\_{inercia}, f\\_{lineal})\n- Tabla **Arrays** con todos los arrays (arr1 a arr10, arr\\_{un\\_elemento}, arr\\_{dos\\_elementos}, alturas, xs\\_{sweep}, ys\\_{sweep})\n- Tabla **Variables** con los resultados y constantes"
     }
   ]

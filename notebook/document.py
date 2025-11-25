@@ -345,31 +345,71 @@ class FormulaBlock(Block):
             pass
 
         # Fall back to generic SymPy parsing
-        return self._safe_sympify(rhs, context)
+        try:
+            return self._safe_sympify(rhs, context)
+        except Exception:  # pylint: disable=broad-except
+            return None
 
     @staticmethod
     def _parse_conditional_expr(expression: str, context: EvaluationContext) -> Optional[sp.Expr]:
-        """Convert Python inline conditionals into a SymPy Piecewise expression."""
+        """Convert Python conditionals (inline or multi-line) into ``Piecewise``."""
 
         try:
-            tree = ast.parse(expression, mode="eval")
+            tree = ast.parse(expression)
         except SyntaxError:
             return None
 
-        if not any(isinstance(node, ast.IfExp) for node in ast.walk(tree)):
-            return None
-
-        def _convert(node):
+        def _convert_expr(node: ast.AST) -> sp.Expr:
             if isinstance(node, ast.IfExp):
-                test = _convert(node.test)
-                body = _convert(node.body)
-                orelse = _convert(node.orelse)
+                test = _convert_expr(node.test)
+                body = _convert_expr(node.body)
+                orelse = _convert_expr(node.orelse)
                 return sp.Piecewise((body, test), (orelse, True))
+
             src = ast.get_source_segment(expression, node) or ast.unparse(node)
             normalized = FormulaBlock._normalize_expression(src)
             return FormulaBlock._safe_sympify(normalized, context, allow_conditional=False)
 
-        return _convert(tree.body)
+        def _extract_branch_expr(body_nodes: list[ast.stmt]) -> Optional[sp.Expr]:
+            if len(body_nodes) != 1 or not isinstance(body_nodes[0], ast.Expr):
+                return None
+            return _convert_expr(body_nodes[0].value)
+
+        if len(tree.body) != 1:
+            return None
+
+        first_stmt = tree.body[0]
+        if isinstance(first_stmt, ast.Expr):
+            if isinstance(first_stmt.value, ast.IfExp):
+                return _convert_expr(first_stmt.value)
+            return None
+
+        if not isinstance(first_stmt, ast.If):
+            return None
+
+        branches = []
+        current = first_stmt
+        while True:
+            body_expr = _extract_branch_expr(current.body)
+            if body_expr is None:
+                return None
+            test_expr = _convert_expr(current.test)
+            branches.append((body_expr, test_expr))
+
+            if len(current.orelse) == 1 and isinstance(current.orelse[0], ast.If):
+                current = current.orelse[0]
+                continue
+
+            if current.orelse:
+                orelse_expr = _extract_branch_expr(current.orelse)
+                if orelse_expr is None:
+                    return None
+                branches.append((orelse_expr, True))
+            else:
+                branches.append((sp.nan, True))
+            break
+
+        return sp.Piecewise(*branches)
 
     @staticmethod
     def _safe_sympify(expression: str, context: EvaluationContext, *, allow_conditional: bool = True) -> sp.Expr:
@@ -377,7 +417,7 @@ class FormulaBlock(Block):
 
         expr = expression.strip()
 
-        if allow_conditional and " if " in expr and " else " in expr:
+        if allow_conditional:
             piecewise_expr = FormulaBlock._parse_conditional_expr(expr, context)
             if piecewise_expr is not None:
                 return piecewise_expr
@@ -407,6 +447,9 @@ class FormulaBlock(Block):
                 "linspace": sp.Function("linspace"),
                 "arange": sp.Function("arange"),
                 "sweep": sp.Function("sweep"),
+                "And": sp.And,
+                "Or": sp.Or,
+                "Not": sp.Not,
             }
             for name, obj in safe_locals.items():
                 context.symbols.setdefault(name, obj)
@@ -471,6 +514,14 @@ class FormulaBlock(Block):
         expr = self._normalize_expression(expression).replace("^", "**")
         try:
             return eval(expr, {"__builtins__": {}}, env), None  # pylint: disable=eval-used
+        except SyntaxError:
+            try:
+                sym_expr = self._safe_sympify(expression, context)
+                substituted = sym_expr.subs(context.numeric_values)
+                numeric = sp.N(substituted)
+                return numeric, None
+            except Exception as exc3:  # pylint: disable=broad-except
+                return None, exc3
         except NameError as exc:
             # Retry once injecting all known numbers explicitly.
             for name, value in context.numeric_values.items():
