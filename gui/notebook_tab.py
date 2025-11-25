@@ -622,6 +622,12 @@ class NotebookTab(QWidget):
             ("if/elif/else", "(a) if (cond1) else ((b) if (cond2) else (c))"),
         ])
 
+        _add_group("Lógico", [
+            ("A and B", "(A) and (B)"),
+            ("A or B", "(A) or (B)"),
+            ("not A", "not (A)"),
+        ])
+
         _add_group("Definir f(x)", [
             ("f(x)", "f(x) = "),
         ])
