@@ -214,7 +214,11 @@ class TextBlock(Block):
     def to_html(self) -> str:
         rendered = self._markdown.render(self.raw)
         sanitized = html.escape(self.raw) if not rendered else self._sanitize(rendered)
-        return f"<div class='text-block'>{sanitized}</div>"
+        return (
+            f"<div class='text-block' id='block-{self.block_id}' data-block-id='{self.block_id}'>"
+            f"{sanitized}"
+            "</div>"
+        )
 
     @cached_property
     def _markdown(self):
@@ -872,7 +876,7 @@ class FormulaBlock(Block):
         status_class = " error" if self.evaluation_status == "error" else ""
         result_html = f"<div class='formula-result'>= {html.escape(self.result or '')}</div>"
         return (
-            f"<div class='formula-block{status_class}'>"
+            f"<div class='formula-block{status_class}' id='block-{self.block_id}' data-block-id='{self.block_id}'>"
             f"<div class='formula-input'>$$ {latex_expr} $$</div>"
             f"{result_html}"
             "</div>"

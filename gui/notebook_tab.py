@@ -97,6 +97,7 @@ class NotebookTab(QWidget):
         self.preview = QWebEngineView()
         self._delete_armed = False
         self.hint_label = QLabel()
+        self._last_selected_block_id = None
 
         self._setup_ui()
         self._connect_signals()
@@ -397,6 +398,8 @@ class NotebookTab(QWidget):
                 target_row = 0
             self._select_row(target_row)
             self._load_editor_from_row(target_row)
+            self._remember_selected_block(target_row)
+            self._scroll_preview_later()
         else:
             self.editor.blockSignals(True)
             self.editor.clear()
@@ -411,6 +414,14 @@ class NotebookTab(QWidget):
         self.block_stack.setCurrentRow(row)
         self.block_list.blockSignals(False)
         self.block_stack.blockSignals(False)
+
+    def _remember_selected_block(self, row: int) -> None:
+        """Store the block id for later scroll sync."""
+
+        if 0 <= row < len(self.document.blocks):
+            self._last_selected_block_id = self.document.blocks[row].block_id
+        else:
+            self._last_selected_block_id = None
 
     def _current_row(self) -> int:
         """Return the active row prioritizing the stacked view selection."""
@@ -473,6 +484,8 @@ class NotebookTab(QWidget):
             return
         self._select_row(row)
         self._load_editor_from_row(row)
+        self._remember_selected_block(row)
+        self._scroll_preview_later()
 
     def on_stack_selected(self, current: QListWidgetItem, _previous: QListWidgetItem) -> None:
         row = self.block_stack.currentRow()
@@ -481,6 +494,8 @@ class NotebookTab(QWidget):
             return
         self._select_row(row)
         self._load_editor_from_row(row)
+        self._remember_selected_block(row)
+        self._scroll_preview_later()
 
     def on_editor_changed(self) -> None:
         row = self._current_row()
@@ -504,6 +519,24 @@ class NotebookTab(QWidget):
             options=self._evaluation_options(hide_logs=False),
         )
         self.preview.setHtml(html_content)
+        self._scroll_preview_later()
+
+    def _scroll_preview_later(self) -> None:
+        """Scroll to the last selected block after the preview is ready."""
+
+        if not self._last_selected_block_id:
+            return
+
+        def _scroll():
+            js = (
+                "(() => {"
+                f" const el = document.getElementById('block-{self._last_selected_block_id}');"
+                " if (el) { el.scrollIntoView({behavior: 'smooth', block: 'center'}); }"
+                "})();"
+            )
+            self.preview.page().runJavaScript(js)
+
+        QTimer.singleShot(150, _scroll)
 
     def export_html(self) -> None:
         """Persist the rendered notebook to an HTML file."""

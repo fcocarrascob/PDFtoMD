@@ -287,6 +287,9 @@
     {
       "type": "FormulaBlock",
       "raw": "acceso_otorgado = Or((x_cond > 0), And(x_cond == -3, Not(x_cond < -10)))"
+    },
+    {
+      "type": "TextBlock",
       "raw": "### 3.7 Expresiones lógicas\n\nEjemplos inline: (A) and (B), not (A)."
     },
     {
@@ -311,7 +314,59 @@
     },
     {
       "type": "TextBlock",
-      "raw": "## Verificaci?n Final\n\nSi todas las evaluaciones funcionan correctamente, deber?as ver:\n- Tabla **Functions** con las funciones definidas (f, area\\_{rectangulo}, g, h, cuadrado, doble, compuesta, momento\\_{inercia}, f\\_{lineal})\n- Tabla **Arrays** con todos los arrays (arr1 a arr10, arr\\_{un\\_elemento}, arr\\_{dos\\_elementos}, alturas, xs\\_{sweep}, ys\\_{sweep})\n- Tabla **Variables** con los resultados y constantes"
+      "raw": "### 3.8 Mezclas lógicas y arrays"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "es_positivo(x) = x > 0"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "es_no_cero(x) = Not(x == 0)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "valores_mix = linspace(-2, 2, 5)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "positivos_mix = sweep(es_positivo, valores_mix)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "todos_positivos = And(positivos_mix)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "al_menos_uno_positivo = Or(positivos_mix)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "ninguno_cero = And(sweep(es_no_cero, valores_mix))"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "flag_mix = al_menos_uno_positivo"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "valor_flag = 1 if flag_mix else 0"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "max_abs_mix = max(sweep(abs, valores_mix))"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "descendente = arange(3, -3, -1)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "comparacion_desc = sweep(es_no_cero, descendente)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "## Verificación Final\n\nSi todas las evaluaciones funcionan correctamente, deberías ver:\n- Tabla **Functions** con las funciones definidas (f, area\\_{rectangulo}, g, h, cuadrado, doble, compuesta, momento\\_{inercia}, f\\_{lineal}, es_positivo, es_no_cero)\n- Tabla **Arrays** con todos los arrays (arr1 a arr10, arr\\_{un\\_elemento}, arr\\_{dos\\_elementos}, alturas, xs\\_{sweep}, ys\\_{sweep}, valores_mix, descendente)\n- Tabla **Variables** con los resultados y constantes"
     }
   ]
 }

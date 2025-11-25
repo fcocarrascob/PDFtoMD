@@ -89,9 +89,13 @@ def math_env() -> dict[str, object]:
             return math.sqrt(value)
 
     def _and(*args):
+        if len(args) == 1 and hasattr(args[0], "__iter__") and not isinstance(args[0], (str, bytes)):
+            args = tuple(args[0])  # Accept single iterable argument
         return all(bool(arg) for arg in args)
 
     def _or(*args):
+        if len(args) == 1 and hasattr(args[0], "__iter__") and not isinstance(args[0], (str, bytes)):
+            args = tuple(args[0])  # Accept single iterable argument
         return any(bool(arg) for arg in args)
 
     def _not(arg):
