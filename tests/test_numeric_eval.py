@@ -1,6 +1,13 @@
 """Numeric-only evaluation helpers (no units)."""
 
+import os
+import sys
+
 import pytest
+
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT not in sys.path:
+    sys.path.append(ROOT)
 
 from notebook.document import Document, FormulaBlock
 
@@ -15,7 +22,7 @@ def test_function_and_call_numeric_only() -> None:
     context = doc.evaluate()
 
     assert not context.errors
-    assert doc.blocks[1].result == "12"
+    assert doc.blocks[1].result == "12.00"
     assert doc.blocks[1].numeric_value == 12.0
 
 
@@ -44,7 +51,7 @@ def test_comprehension_and_range_numeric_only() -> None:
     context = doc.evaluate()
 
     assert not context.errors
-    assert context.objects["xs"] == [0, 1, 2, 3, 4]
+    assert context.arrays["xs"].values == [0, 1, 2, 3, 4]
     total_block = context.variables[-1]
     assert total_block.name == "total"
     assert total_block.numeric_value == 10
@@ -80,3 +87,67 @@ def test_sweep_with_array_literal() -> None:
     assert context.arrays["out"].values == [1, 3, 5]
     assert context.numeric_values["out_sum"] == pytest.approx(9.0)
     assert context.numeric_values["out_max"] == pytest.approx(5.0)
+
+
+def test_multiline_conditional_piecewise() -> None:
+    doc = Document(
+        [
+            FormulaBlock("x = -1"),
+            FormulaBlock(
+                """
+if x > 0:
+    10
+elif x > -2:
+    20
+else:
+    30
+"""
+            ),
+        ]
+    )
+
+    context = doc.evaluate()
+
+    assert not context.errors
+    assert doc.blocks[1].numeric_value == 20
+    assert doc.blocks[1].result == "20.00"
+
+
+def test_multiline_conditional_with_equality_branch() -> None:
+    doc = Document(
+        [
+            FormulaBlock("x = -3"),
+            FormulaBlock(
+                """
+if x > 0:
+    10
+elif x == -3:
+    30
+else:
+    -5
+"""
+            ),
+        ]
+    )
+
+    context = doc.evaluate()
+
+    assert not context.errors
+    assert doc.blocks[1].numeric_value == 30
+    assert doc.blocks[1].result == "30.00"
+
+
+def test_logical_operators_in_conditionals() -> None:
+    doc = Document(
+        [
+            FormulaBlock("a = 5"),
+            FormulaBlock("b = -3"),
+            FormulaBlock("result = 1 if And(a > 0, Not(b > 0)) else 0"),
+        ]
+    )
+
+    context = doc.evaluate()
+
+    assert not context.errors
+    assert context.numeric_values["result"] == 1
+    assert doc.blocks[2].result == "1.00"

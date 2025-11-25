@@ -88,6 +88,15 @@ def math_env() -> dict[str, object]:
         except Exception:
             return math.sqrt(value)
 
+    def _and(*args):
+        return all(bool(arg) for arg in args)
+
+    def _or(*args):
+        return any(bool(arg) for arg in args)
+
+    def _not(arg):
+        return not bool(arg)
+
     return {
         "sqrt": _sqrt,
         "sin": math.sin,
@@ -104,4 +113,7 @@ def math_env() -> dict[str, object]:
         "linspace": linspace,
         "arange": arange,
         "sweep": sweep,
+        "And": _and,
+        "Or": _or,
+        "Not": _not,
     }
