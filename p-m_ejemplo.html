@@ -1,0 +1,115 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='utf-8'>
+            
+        <script>
+        window.MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$','$$'], ['\\[','\\]']]
+          },
+          options: {
+            skipHtmlTags: ['script','noscript','style','textarea','pre','code']
+          }
+        };
+        </script>
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+            <style>
+                
+            @page {
+                size: A4;
+                margin: 12mm;
+            }
+            body {
+                font-family: Arial, sans-serif;
+                padding: 24px;
+                background: #eceff4;
+                color: #1f1f1f;
+                display: flex;
+                justify-content: center;
+            }
+            .page {
+                background: #f7f8fa;
+                color: #1f1f1f;
+                max-width: 210mm;
+                min-height: 297mm;
+                width: 100%;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+                border: 1px solid #e5e8ee;
+                border-radius: 6px;
+                padding: 24px;
+                box-sizing: border-box;
+            }
+            .text-block { margin-bottom: 12px; line-height: 1.5; }
+            .text-block h1, .text-block h2, .text-block h3, .text-block h4, .text-block h5, .text-block h6 {
+                margin: 0 0 8px 0;
+                font-weight: 700;
+                color: #2a82da;
+            }
+            .text-block ul, .text-block ol {
+                padding-left: 20px;
+                margin: 6px 0 12px 0;
+            }
+            .text-block li { margin-bottom: 4px; }
+            .text-block code {
+                background: #ffffff;
+                border: 1px solid #dbe1ea;
+                padding: 2px 4px;
+                border-radius: 4px;
+                font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            }
+            .formula-block { margin-bottom: 16px; padding: 12px; background: #ffffff; border-radius: 6px; border: 1px solid #dbe1ea; }
+            .formula-block.error { border-color: #d9534f; background: #fdecea; }
+            .formula-input { font-size: 18px; margin-bottom: 6px; }
+            .formula-result { color: #2a82da; font-weight: bold; }
+            .formula-block.error .formula-result { color: #d9534f; }
+            .function-table, .variable-table { margin-top: 24px; background: #ffffff; padding: 12px; border-radius: 6px; border: 1px solid #dbe1ea; }
+            .function-table h3, .variable-table h3 { margin-top: 0; }
+            .function-table table, .variable-table table { width: 100%; border-collapse: collapse; }
+            .function-table th, .function-table td, .variable-table th, .variable-table td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #dbe1ea; }
+            .function-table th, .variable-table th { color: #1f1f1f; opacity: 0.8; }
+            .error-panel, .log-panel { margin-top: 16px; background: #ffffff; padding: 12px; border-radius: 6px; border: 1px solid #dbe1ea; }
+            .error-panel h3 { margin-top: 0; color: #d9534f; }
+            .log-panel h3 { margin-top: 0; color: #2a82da; }
+            .error-panel ul { padding-left: 18px; margin: 8px 0; }
+            .error-panel li { margin-bottom: 6px; }
+            .log-panel table { width: 100%; border-collapse: collapse; }
+            .log-panel th, .log-panel td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #dbe1ea; }
+            .log-panel th { color: #1f1f1f; opacity: 0.8; }
+        
+            </style>
+        </head>
+        <body>
+            <div class='page'>
+                <div class='text-block' id='block-20cdb5bd036c4ba99bf68a8e8316221d' data-block-id='20cdb5bd036c4ba99bf68a8e8316221d'><h1>Ejemplo: pares P-M para columna 30x50 cm con 4 barras</h1>
+<p>Se usan units mm y MPa (fuerzas en kN, momentos en kN·m).</p>
+</div>
+<div class='formula-block' id='block-6a3762417dd34b878937813f810831c1' data-block-id='6a3762417dd34b878937813f810831c1'><div class='formula-input'>$$ b = 300.0 $$</div><div class='formula-result'>= 300.00</div></div>
+<div class='formula-block' id='block-6d4bcc14764040819cdf7974ce32dfc6' data-block-id='6d4bcc14764040819cdf7974ce32dfc6'><div class='formula-input'>$$ h = 500.0 $$</div><div class='formula-result'>= 500.00</div></div>
+<div class='formula-block' id='block-21fb0ae5117a4355bee483b346abe168' data-block-id='21fb0ae5117a4355bee483b346abe168'><div class='formula-input'>$$ cover = 40.0 $$</div><div class='formula-result'>= 40.00</div></div>
+<div class='formula-block' id='block-eade5f421c844f99bee6527ab79ab67f' data-block-id='eade5f421c844f99bee6527ab79ab67f'><div class='formula-input'>$$ fc = 28.0 $$</div><div class='formula-result'>= 28.00</div></div>
+<div class='formula-block' id='block-35c19539b4b64c4c95e286c77235bc3d' data-block-id='35c19539b4b64c4c95e286c77235bc3d'><div class='formula-input'>$$ fy = 420.0 $$</div><div class='formula-result'>= 420.00</div></div>
+<div class='formula-block' id='block-d9fa20220b6d4e128278cd6d18589165' data-block-id='d9fa20220b6d4e128278cd6d18589165'><div class='formula-input'>$$ Es = 200000.0 $$</div><div class='formula-result'>= 200000.00</div></div>
+<div class='formula-block' id='block-eff6133520b540e6bf6cc97809677ccb' data-block-id='eff6133520b540e6bf6cc97809677ccb'><div class='formula-input'>$$ \beta_{1} = 0.85 $$</div><div class='formula-result'>= 0.85</div></div>
+<div class='formula-block' id='block-767e2f2312e34d40852ec5df54e88f3d' data-block-id='767e2f2312e34d40852ec5df54e88f3d'><div class='formula-input'>$$ As_{bar} = 200.0 $$</div><div class='formula-result'>= 200.00</div></div>
+<div class='formula-block' id='block-5ac9613c8baf4fc5bcf3fb61d86aab51' data-block-id='5ac9613c8baf4fc5bcf3fb61d86aab51'><div class='formula-input'>$$ y_{top} = cover $$</div><div class='formula-result'>= 40.00</div></div>
+<div class='formula-block' id='block-3a1c454522774b2db504d4dca3cdcac2' data-block-id='3a1c454522774b2db504d4dca3cdcac2'><div class='formula-input'>$$ y_{bottom} = h - cover $$</div><div class='formula-result'>= 460.00</div></div>
+<div class='formula-block' id='block-fdaabe6b2e71474e99f9482a3da0c05d' data-block-id='fdaabe6b2e71474e99f9482a3da0c05d'><div class='formula-input'>$$ eps_{s}(y, c) = \frac{0.003 \cdot c - 0.003 \cdot y}{c} $$</div><div class='formula-result'>= Function eps_s(y, c) defined</div></div>
+<div class='formula-block' id='block-726765026b33414b803aa3d421a97c15' data-block-id='726765026b33414b803aa3d421a97c15'><div class='formula-input'>$$ steel_{stress}(eps) = \begin{cases} \begin{cases} fy & \text{for}\: eps \geq 0 \\- fy & \text{otherwise} \end{cases} & \text{for}\: fy \leq \left|{Es \cdot eps}\right| \\Es \cdot eps & \text{otherwise} \end{cases} $$</div><div class='formula-result'>= Function steel_stress(eps) defined</div></div>
+<div class='formula-block' id='block-1cef1f5972e74df998d4af1a3cea75fc' data-block-id='1cef1f5972e74df998d4af1a3cea75fc'><div class='formula-input'>$$ steel_{force}(eps) = As_{bar} \cdot \operatorname{steel}_{stress}{\left(eps \right)} $$</div><div class='formula-result'>= Function steel_force(eps) defined</div></div>
+<div class='formula-block' id='block-02e9de3e14c448f6b652677bf5cd2753' data-block-id='02e9de3e14c448f6b652677bf5cd2753'><div class='formula-input'>$$ pmP(c) = \frac{\operatorname{steel}_{force}{\left(\operatorname{eps}_{s}{\left(y_{bottom},c \right)} \right)}}{500} + \frac{\operatorname{steel}_{force}{\left(\operatorname{eps}_{s}{\left(y_{top},c \right)} \right)}}{500} + 0.00085 \cdot b \cdot \beta_{1} \cdot c \cdot fc $$</div><div class='formula-result'>= Function pmP(c) defined</div></div>
+<div class='formula-block' id='block-7ecb60b21c31442886ccb7f58a0ea465' data-block-id='7ecb60b21c31442886ccb7f58a0ea465'><div class='formula-input'>$$ pmM(c) = \frac{\left(y_{bottom} - \frac{h}{2}\right) \cdot \operatorname{steel}_{force}{\left(\operatorname{eps}_{s}{\left(y_{bottom},c \right)} \right)}}{500000} + \frac{\left(y_{top} - \frac{h}{2}\right) \cdot \operatorname{steel}_{force}{\left(\operatorname{eps}_{s}{\left(y_{top},c \right)} \right)}}{500000} + 8.5 \cdot 10^{-7} \cdot b \cdot \beta_{1} \cdot c \cdot fc \cdot \left(- \frac{h}{2} + \frac{\beta_{1} \cdot c}{2}\right) $$</div><div class='formula-result'>= Function pmM(c) defined</div></div>
+<div class='formula-block' id='block-96455c07c689484abd4036d34bc27f46' data-block-id='96455c07c689484abd4036d34bc27f46'><div class='formula-input'>$$ c_{vals} = \operatorname{linspace}{\left(40,450,9 \right)} $$</div><div class='formula-result'>= Array (9 values): [40.00, 91.25, 142.50, ...]</div></div>
+<div class='formula-block' id='block-3d9d0b221e9e440c9def9c55f329046f' data-block-id='3d9d0b221e9e440c9def9c55f329046f'><div class='formula-input'>$$ P_{vals} = \operatorname{sweep}{\left(\operatorname{pmP},c_{vals} \right)} $$</div><div class='formula-result'>= Array (9 values): [74.76, 520.59, 864.83, ...]</div></div>
+<div class='formula-block' id='block-e1c7bf1521d345aa9f2e2f6d7145b0e7' data-block-id='e1c7bf1521d345aa9f2e2f6d7145b0e7'><div class='formula-input'>$$ M_{vals} = \operatorname{sweep}{\left(\operatorname{pmM},c_{vals} \right)} $$</div><div class='formula-result'>= Array (9 values): [-91.84, -180.56, -234.39, ...]</div></div>
+<div class='text-block' id='block-0fe452a3de124b18b05c49c1308a0242' data-block-id='0fe452a3de124b18b05c49c1308a0242'><p>Los arrays <code>P_vals</code> (kN) y <code>M_vals</code> (kN·m) tienen el mismo largo y se emparejan por índice con <code>c_vals</code>. Ej.: para el i-ésimo punto, el par es (P_vals[i], M_vals[i]).</p>
+</div>
+<div class='function-table'><h3>Functions</h3><table><thead><tr><th>Signature</th><th>Expression</th></tr></thead><tbody><tr><td>eps_s(y, c)</td><td>$$ 0.003 * (c - y) / c $$</td></tr><tr><td>steel_stress(eps)</td><td>$$ (fy if eps >= 0 else -fy) if abs(Es*eps) >= fy else Es*eps $$</td></tr><tr><td>steel_force(eps)</td><td>$$ steel_stress(eps) * As_bar $$</td></tr><tr><td>pmP(c)</td><td>$$ (0.85*fc*b*beta1*c + steel_force(eps_s(y_top, c)) + steel_force(eps_s(y_top, c)) + steel_force(eps_s(y_bottom, c)) + steel_force(eps_s(y_bottom, c)))/1000 $$</td></tr><tr><td>pmM(c)</td><td>$$ (0.85*fc*b*beta1*c*(beta1*c/2 - h/2) + steel_force(eps_s(y_top, c))*(y_top-h/2) + steel_force(eps_s(y_top, c))*(y_top-h/2) + steel_force(eps_s(y_bottom, c))*(y_bottom-h/2) + steel_force(eps_s(y_bottom, c))*(y_bottom-h/2))/1000000 $$</td></tr></tbody></table></div>
+<div class='variable-table'><h3>Arrays</h3><table><thead><tr><th>Name</th><th>Expression</th><th>Values</th></tr></thead><tbody><tr><td>c_vals</td><td>$$ linspace(40, 450, 9) $$</td><td>40.00, 91.25, 142.50, 193.75, 245.00, ..., 398.75, 450.00</td></tr><tr><td>P_vals</td><td>$$ sweep(pmP, c_vals) $$</td><td>74.76, 520.59, 864.83, 1175.87, 1486.90, ..., 2551.15, 2893.72</td></tr><tr><td>M_vals</td><td>$$ sweep(pmM, c_vals) $$</td><td>-91.84, -180.56, -234.39, -267.70, -287.46, ..., -237.91, -196.85</td></tr></tbody></table></div>
+<div class='variable-table'><h3>Variables</h3><table><thead><tr><th>Name</th><th>Expression</th><th>Value</th></tr></thead><tbody><tr><td>b</td><td>$$ 300.0 $$</td><td>300.00</td></tr><tr><td>h</td><td>$$ 500.0 $$</td><td>500.00</td></tr><tr><td>cover</td><td>$$ 40.0 $$</td><td>40.00</td></tr><tr><td>fc</td><td>$$ 28.0 $$</td><td>28.00</td></tr><tr><td>fy</td><td>$$ 420.0 $$</td><td>420.00</td></tr><tr><td>Es</td><td>$$ 200000.0 $$</td><td>200000.00</td></tr><tr><td>beta1</td><td>$$ 0.85 $$</td><td>0.85</td></tr><tr><td>As_bar</td><td>$$ 200.0 $$</td><td>200.00</td></tr><tr><td>y_top</td><td>$$ cover $$</td><td>40.00</td></tr><tr><td>y_bottom</td><td>$$ h - cover $$</td><td>460.00</td></tr><tr><td>c_vals</td><td>$$ \operatorname{linspace}{\left(40,450,9 \right)} $$</td><td></td></tr><tr><td>P_vals</td><td>$$ \operatorname{sweep}{\left(\operatorname{pmP},c_{vals} \right)} $$</td><td></td></tr><tr><td>M_vals</td><td>$$ \operatorname{sweep}{\left(\operatorname{pmM},c_{vals} \right)} $$</td><td></td></tr></tbody></table></div>
+            </div>
+        </body>
+        </html>
+        

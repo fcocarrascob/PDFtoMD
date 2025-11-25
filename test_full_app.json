@@ -366,6 +366,50 @@
     },
     {
       "type": "TextBlock",
+      "raw": "### 3.9 Helpers iterativos (imap / imap2 / irange / isum / imean)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "xs_iter = [1, 2, 3]"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "ys_iter = [10, 20, 30]"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "add_pair(x, y) = x + y"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "sample_add_pair = add_pair(2, 3)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "lambda_val(x) = 2 * x"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "double_imap = imap(lambda_val, xs_iter)"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "Ejemplo imap2 (no evaluado aquí): `sum_imap2 = imap2(max, xs_iter, ys_iter)` devuelve el máximo par a par."
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "idx_range = irange(0, 5)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "suma_iter = isum(xs_iter)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "promedio_iter = imean(ys_iter)"
+    },
+    {
+      "type": "TextBlock",
       "raw": "## Verificación Final\n\nSi todas las evaluaciones funcionan correctamente, deberías ver:\n- Tabla **Functions** con las funciones definidas (f, area\\_{rectangulo}, g, h, cuadrado, doble, compuesta, momento\\_{inercia}, f\\_{lineal}, es_positivo, es_no_cero)\n- Tabla **Arrays** con todos los arrays (arr1 a arr10, arr\\_{un\\_elemento}, arr\\_{dos\\_elementos}, alturas, xs\\_{sweep}, ys\\_{sweep}, valores_mix, descendente)\n- Tabla **Variables** con los resultados y constantes"
     }
   ]

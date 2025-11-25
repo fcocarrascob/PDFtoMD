@@ -35,6 +35,7 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
     QHeaderView,
     QAbstractItemView,
+    QApplication,
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
 
@@ -751,7 +752,7 @@ class NotebookTab(QWidget):
                     text = f"{v.name}\n{value}"
                 else:
                     text = f"{v.name}\n{v.expression}"
-                self.snippet_table.setItem(row, 0, _make_item(text, f"{v.name} = {v.expression}", v.name))
+                self.snippet_table.setItem(row, 0, _make_item(text, f"{v.name} = {value if v.numeric_value is not None else v.expression}", v.name))
             else:
                 self.snippet_table.setItem(row, 0, QTableWidgetItem(""))
 
@@ -763,7 +764,11 @@ class NotebookTab(QWidget):
                 else:
                     preview = ", ".join(f"{v:.2f}" for v in display)
                 text = f"{a.name}\n[{preview}]"
-                self.snippet_table.setItem(row, 1, _make_item(text, f"{a.name} = {a.expression}", a.name))
+                full_values = ", ".join(f"{v:.4g}" for v in display)
+                tooltip = f"{a.name} = [{full_values}]\nexpr: {a.expression}"
+                item = _make_item(text, tooltip, a.name)
+                item.setData(Qt.ItemDataRole.UserRole + 1, f"[{full_values}]")
+                self.snippet_table.setItem(row, 1, item)
             else:
                 self.snippet_table.setItem(row, 1, QTableWidgetItem(""))
 
@@ -790,6 +795,26 @@ class NotebookTab(QWidget):
         payload = item.data(Qt.ItemDataRole.UserRole)
         if payload:
             self.insert_snippet(payload)
+
+    # Extend table to allow copying full arrays
+    def keyPressEvent(self, event) -> None:  # noqa: N802
+        if event.key() == Qt.Key.Key_C and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+            self._copy_snippet_table()
+            return
+        super().keyPressEvent(event)
+
+    def _copy_snippet_table(self) -> None:
+        item = self.snippet_table.currentItem()
+        if not item:
+            return
+        col = item.column()
+        # Column 1 = Arrays
+        if col == 1:
+            full_values = item.data(Qt.ItemDataRole.UserRole + 1)
+            if full_values:
+                QApplication.clipboard().setText(full_values)
+                return
+        QApplication.clipboard().setText(item.text())
 
     def _hide_logs_pref(self) -> bool:
         stored = self.settings.value("render/hide_logs", False)

@@ -78,6 +78,49 @@ def sweep(func: Callable[[float], float], xs: Iterable[float]) -> list[float]:
     return results
 
 
+def imap(func: Callable[[float], float], xs: Iterable[float]) -> list[float]:
+    """
+    Map a unary function over an iterable and return a list (Python map amigable).
+    """
+    results = []
+    for x in xs:
+        results.append(func(x))
+    return results
+
+
+def imap2(func: Callable[[float, float], float], xs: Iterable[float], ys: Iterable[float]) -> list[float]:
+    """
+    Map a binary function over two iterables in paralelo (tipo zip) y retornar lista.
+    """
+    results = []
+    for x, y in zip(xs, ys):
+        results.append(func(x, y))
+    return results
+
+
+def irange(*args: int) -> list[int]:
+    """
+    Return a list version of range (so se ve el contenido).
+    """
+    try:
+        return list(range(*args))
+    except TypeError as exc:
+        raise exc
+
+
+def isum(xs: Iterable[float]) -> float:
+    """Sum helper that siempre retorna float."""
+    return float(sum(xs))
+
+
+def imean(xs: Iterable[float]) -> float:
+    """Mean helper sobre iterables numéricos."""
+    xs_list = list(xs)
+    if not xs_list:
+        return 0.0
+    return float(sum(xs_list) / len(xs_list))
+
+
 def math_env() -> dict[str, object]:
     """Safe math helpers exposed to expression evaluation."""
 
@@ -117,6 +160,11 @@ def math_env() -> dict[str, object]:
         "linspace": linspace,
         "arange": arange,
         "sweep": sweep,
+        "imap": imap,
+        "imap2": imap2,
+        "irange": irange,
+        "isum": isum,
+        "imean": imean,
         "And": _and,
         "Or": _or,
         "Not": _not,

@@ -1,0 +1,124 @@
+{
+  "blocks": [
+    {
+      "type": "TextBlock",
+      "raw": "# Ejemplo: pares P-M para columna 30x50 cm con 4 barras\n\nSe usan units mm y MPa (fuerzas en kN, momentos en kN·m)."
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "b = 300"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "h = 500"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "cover = 40"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "fc = 28"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "fy = 420"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "Es = 200000"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "beta1 = 0.85"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "As_bar = 200"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "y_top = cover"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "y_bottom = h - cover"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "d_trac = y_bottom"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "eps_s(y, c) = 0.003 * (c - y) / c"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "eps_t(c) = eps_s(d_trac, c)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "eps_t_abs(c) = abs(eps_t(c))"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "steel_stress(eps) = (fy if eps >= 0 else -fy) if abs(Es*eps) >= fy else Es*eps"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "steel_force(eps) = steel_stress(eps) * As_bar"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "pmP(c) = (0.85*fc*b*beta1*c + steel_force(eps_s(y_top, c)) + steel_force(eps_s(y_top, c)) + steel_force(eps_s(y_bottom, c)) + steel_force(eps_s(y_bottom, c)))/1000"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "pmM(c) = (0.85*fc*b*beta1*c*(beta1*c/2 - h/2) + steel_force(eps_s(y_top, c))*(y_top-h/2) + steel_force(eps_s(y_top, c))*(y_top-h/2) + steel_force(eps_s(y_bottom, c))*(y_bottom-h/2) + steel_force(eps_s(y_bottom, c))*(y_bottom-h/2))/1000000"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "phi(c) = 0.65 if eps_t_abs(c) < 0.002 else (0.65 + (0.25*(eps_t_abs(c)-0.002)/0.003)) if eps_t_abs(c) <= 0.005 else 0.9"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "c_vals = linspace(40, 900, 15)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "P_vals = sweep(pmP, c_vals)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "M_vals = sweep(pmM, c_vals)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "phi_vals = sweep(phi, c_vals)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "pmP_phi(c) = phi(c) * pmP(c)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "pmM_phi(c) = phi(c) * pmM(c)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "P_phi = sweep(pmP_phi, c_vals)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "M_phi = sweep(pmM_phi, c_vals)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "P_concentrico = (0.85*fc*b*h + 4*As_bar*fy)/1000"
+    },
+    {
+      "type": "TextBlock",
+      "raw": "Los arrays `P_vals` (kN) y `M_vals` (kN·m) tienen el mismo largo y se emparejan por índice con `c_vals`. Ej.: para el i-ésimo punto, el par es (P_vals[i], M_vals[i]). Incluye el valor de carga concéntrica `P_concentrico` (M≈0)."
+    }
+  ]
+}

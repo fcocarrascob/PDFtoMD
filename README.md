@@ -24,6 +24,8 @@ Aplicación de escritorio en PySide6 con dos pestañas principales: conversor PD
 - `sum`, `min`, `max`, `abs`, `range`
 - `linspace(start, stop, num)`, `arange(start, stop, step)`
 - `sweep(func, xs)` para mapear funciones escalares sobre listas/iterables
+- `imap(func, xs)`, `imap2(func, xs, ys)` para aplicar funciones unary/binary (tipo map/zip) y devolver lista
+- `irange(...)` para ver rangos como lista, `isum(xs)` y `imean(xs)` como agregados rápidos
 - Booleanas: `And(*args)`, `Or(*args)`, `Not(arg)`
 
 ## Cuaderno de prueba y ejemplos
