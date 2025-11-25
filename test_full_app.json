@@ -274,6 +274,30 @@
     },
     {
       "type": "TextBlock",
+      "raw": "### 3.7 Expresiones lógicas\n\nEjemplos inline: (A) and (B), not (A)."
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "A_logico = True"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "B_logico = False"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "ambas = (A_logico) and (B_logico)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "cualquiera = (A_logico) or (B_logico)"
+    },
+    {
+      "type": "FormulaBlock",
+      "raw": "negado = not (A_logico)"
+    },
+    {
+      "type": "TextBlock",
       "raw": "## Verificaci?n Final\n\nSi todas las evaluaciones funcionan correctamente, deber?as ver:\n- Tabla **Functions** con las funciones definidas (f, area\\_{rectangulo}, g, h, cuadrado, doble, compuesta, momento\\_{inercia}, f\\_{lineal})\n- Tabla **Arrays** con todos los arrays (arr1 a arr10, arr\\_{un\\_elemento}, arr\\_{dos\\_elementos}, alturas, xs\\_{sweep}, ys\\_{sweep})\n- Tabla **Variables** con los resultados y constantes"
     }
   ]
