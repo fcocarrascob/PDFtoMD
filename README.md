@@ -71,3 +71,7 @@ Aplicación de escritorio en PySide6 con dos pestañas principales: conversor PD
 - Validaciones y mensajes de error más claros en fórmulas.
 - Tests automatizados adicionales para casos complejos (potencias, divisiones, funciones trigonométricas).
 - Integración futura con SymPy para funciones avanzadas (linspace, sweep, evaluación simbólica).
+- Ajustar autocalado de fórmulas en renderer (debounce/reflow) o activar linebreaks automáticos de MathJax para expresiones muy largas.
+- Considerar menú contextual en la tabla de snippets para copiar valores completos (hoy solo Ctrl+C en Arrays).
+- `irange`/`imap2`: asumir argumentos enteros y listas de igual largo; documentar/validar si se espera otro comportamiento.
+- Parametrizar mejor el ejemplo de interacción (disposición de barras, signo de phi) si se generaliza a más geometrías.

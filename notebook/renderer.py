@@ -272,7 +272,7 @@ class NotebookRenderer:
                 box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
                 border: 1px solid #e5e8ee;
                 border-radius: 6px;
-                padding: 24px;
+                padding: 18px;
                 box-sizing: border-box;
             }}
             .text-block {{ margin-bottom: 12px; line-height: 1.5; }}
@@ -293,9 +293,19 @@ class NotebookRenderer:
                 border-radius: 4px;
                 font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
             }}
-            .formula-block {{ margin-bottom: 16px; padding: 12px; background: {self.theme.panel}; border-radius: 6px; border: 1px solid {self.theme.border}; }}
+            .formula-block {{
+                margin-bottom: 16px;
+                padding: 12px;
+                background: {self.theme.panel};
+                border-radius: 6px;
+                border: 1px solid {self.theme.border};
+            }}
             .formula-block.error {{ border-color: #d9534f; background: #fdecea; }}
-            .formula-input {{ font-size: 18px; margin-bottom: 6px; }}
+            .formula-input {{
+                font-size: 18px;
+                margin-bottom: 6px;
+                position: relative;
+            }}
             .formula-result {{ color: {self.theme.accent}; font-weight: bold; }}
             .formula-block.error .formula-result {{ color: #d9534f; }}
             .function-table, .variable-table {{ margin-top: 24px; background: {self.theme.panel}; padding: 12px; border-radius: 6px; border: 1px solid {self.theme.border}; }}
@@ -311,6 +321,14 @@ class NotebookRenderer:
             .log-panel table {{ width: 100%; border-collapse: collapse; }}
             .log-panel th, .log-panel td {{ padding: 6px 8px; text-align: left; border-bottom: 1px solid {self.theme.border}; }}
             .log-panel th {{ color: {self.theme.text}; opacity: 0.8; }}
+            mjx-container {{
+                max-width: 100%;
+                overflow-wrap: anywhere;
+            }}
+            @media (max-width: 900px) {{
+                .page {{ padding: 14px; }}
+                .formula-input {{ font-size: 16px; }}
+            }}
         """
 
     @staticmethod
@@ -330,16 +348,51 @@ class NotebookRenderer:
         };
         </script>
         """
+        resize_script = """
+        <script>
+        function rescaleFormulas() {
+          const blocks = document.querySelectorAll('.formula-block');
+          blocks.forEach(block => {
+            const mjx = block.querySelector('mjx-container');
+            if (!mjx) return;
+            mjx.style.transform = '';
+            mjx.style.transformOrigin = 'left top';
+            let scale = 1.0;
+            const maxWidth = block.clientWidth - 8;
+            let loops = 0;
+            while ((mjx.scrollWidth * scale) > maxWidth && scale > 0.55 && loops < 20) {
+              scale -= 0.05;
+              mjx.style.transform = `scale(${scale})`;
+              loops += 1;
+            }
+            if (scale < 1.0) {
+              const rect = mjx.getBoundingClientRect();
+              mjx.parentElement.style.minHeight = `${rect.height}px`;
+            } else {
+              mjx.parentElement.style.minHeight = '';
+            }
+          });
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+          if (window.MathJax && MathJax.startup) {
+            MathJax.startup.promise.then(() => {
+              rescaleFormulas();
+              window.addEventListener('resize', rescaleFormulas);
+            });
+          }
+        });
+        </script>
+        """
 
         if mathjax_path:
             try:
                 with open(mathjax_path, "r", encoding="utf-8") as handle:
                     content = handle.read()
-                return f"{config}<script>{content}</script>"
+                return f"{config}<script>{content}</script>{resize_script}"
             except OSError:
                 # Fall back to external URL if the path cannot be read.
                 pass
 
         if mathjax_url:
-            return f"{config}<script src=\"{html.escape(mathjax_url)}\"></script>"
-        return config
+            return f"{config}<script src=\"{html.escape(mathjax_url)}\"></script>{resize_script}"
+        return config + resize_script
