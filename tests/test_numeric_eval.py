@@ -113,6 +113,30 @@ else:
     assert doc.blocks[1].result == "20.00"
 
 
+def test_multiline_conditional_with_equality_branch() -> None:
+    doc = Document(
+        [
+            FormulaBlock("x = -3"),
+            FormulaBlock(
+                """
+if x > 0:
+    10
+elif x == -3:
+    30
+else:
+    -5
+"""
+            ),
+        ]
+    )
+
+    context = doc.evaluate()
+
+    assert not context.errors
+    assert doc.blocks[1].numeric_value == 30
+    assert doc.blocks[1].result == "30.00"
+
+
 def test_logical_operators_in_conditionals() -> None:
     doc = Document(
         [

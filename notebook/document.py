@@ -20,6 +20,7 @@ except Exception:  # pragma: no cover - optional dependency
 
 import sympy as sp
 from sympy.parsing.sympy_parser import (
+    convert_equals_signs,
     parse_expr,
     standard_transformations,
 )
@@ -366,6 +367,35 @@ class FormulaBlock(Block):
                 orelse = _convert_expr(node.orelse)
                 return sp.Piecewise((body, test), (orelse, True))
 
+            if isinstance(node, ast.Compare):
+                left = _convert_expr(node.left)
+                comparators = [_convert_expr(comp) for comp in node.comparators]
+                ops = node.ops
+                relations: list[sp.Expr] = []
+                current_left = left
+                for op, comparator in zip(ops, comparators):
+                    if isinstance(op, ast.Gt):
+                        relations.append(sp.Gt(current_left, comparator))
+                    elif isinstance(op, ast.GtE):
+                        relations.append(sp.Ge(current_left, comparator))
+                    elif isinstance(op, ast.Lt):
+                        relations.append(sp.Lt(current_left, comparator))
+                    elif isinstance(op, ast.LtE):
+                        relations.append(sp.Le(current_left, comparator))
+                    elif isinstance(op, ast.Eq):
+                        relations.append(sp.Eq(current_left, comparator))
+                    elif isinstance(op, ast.NotEq):
+                        relations.append(sp.Ne(current_left, comparator))
+                    else:
+                        return None
+                    current_left = comparator
+
+                if not relations:
+                    return None
+                if len(relations) == 1:
+                    return relations[0]
+                return sp.And(*relations)
+
             src = ast.get_source_segment(expression, node) or ast.unparse(node)
             normalized = FormulaBlock._normalize_expression(src)
             return FormulaBlock._safe_sympify(normalized, context, allow_conditional=False)
@@ -477,11 +507,11 @@ class FormulaBlock(Block):
             return parse_expr(
                 expr,
                 local_dict=context.symbols,
-                transformations=standard_transformations,
+                transformations=standard_transformations + (convert_equals_signs,),
             )
         return parse_expr(
             expr,
-            transformations=standard_transformations,
+            transformations=standard_transformations + (convert_equals_signs,),
         )
 
     @staticmethod
@@ -587,7 +617,8 @@ class FormulaBlock(Block):
         try:
             # Last resort: parse without locals just to get LaTeX for render.
             self.sympy_expr = parse_expr(
-                self._normalize_expression(expression), transformations=standard_transformations
+                self._normalize_expression(expression),
+                transformations=standard_transformations + (convert_equals_signs,),
             )
             return
         except Exception as exc:  # pylint: disable=broad-except
@@ -654,9 +685,11 @@ class FormulaBlock(Block):
         self.evaluation_time_ms = None
 
         raw = self.raw.strip()
+        assignment_match = re.search(r"(?<![<>=!])=(?![=])", raw)
         try:
-            if "=" in raw:
-                lhs, rhs = raw.split("=", 1)
+            if assignment_match:
+                lhs = raw[: assignment_match.start()].strip()
+                rhs = raw[assignment_match.end() :].strip()
                 lhs = lhs.strip()
                 rhs = rhs.strip()
                 if lhs:
