@@ -36,7 +36,7 @@ Aplicación de escritorio en PySide6 que combina dos pestañas:
 - Cuaderno con bloques ordenados de texto/fórmula, evaluación incremental.
 - Cálculos numéricos puros con SymPy (sin manejo de unidades físicas).
 - Previsualización HTML con MathJax y tabla de variables evaluadas.
-- Barra de atajos para insertar operadores matemáticos y símbolos griegos.
+- Barra de atajos para insertar operadores matemáticos, símbolos griegos y plantillas lógicas básicas (and/or/not) apoyadas en las funciones booleanas ya soportadas.
 
 ### Render y formato
 - MathJax soporta inline (`$...$`) y bloque (`$$...$$`); exporta con CDN o bundle local (configurable en Settings) y formato A4 claro.
